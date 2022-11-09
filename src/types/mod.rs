@@ -127,7 +127,7 @@ pub struct Trip {
 pub struct TripLeg {}
 
 pub struct ExchangePointRequest {
-    system: SystemRef,
+    system: System,
     nr_of_results: usize,
     continue_at: usize,
 }
@@ -154,11 +154,4 @@ pub struct GeoRestriction {
 struct PlaceRef {
     stop_place_ref: String,
     name: String,
-}
-
-pub enum SystemRef {
-    Swiss,
-    Austria,
-    Italy,
-    //etc
 }
