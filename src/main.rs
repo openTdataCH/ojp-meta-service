@@ -64,7 +64,7 @@ async fn location<'a>(
     }]))
 }
 
-// index, perfect place to mount a demo application in the future
+// index, perfect place to mount a demo application (via FileServer like openapi)
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
