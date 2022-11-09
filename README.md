@@ -13,3 +13,5 @@ cp .env.example .env
 replace actual tokens -> only the swiss system uses tokens so far.
 
 to run the application: `cargo run`
+
+to test run: `cargo test`
