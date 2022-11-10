@@ -1,10 +1,42 @@
 use roxmltree::{Document, Node};
 
-use crate::types::{Coordinates, ErrorResponse};
+use crate::types::{Coordinates, ErrorResponse, OjpNode};
 
 use super::types::Location;
 
-pub fn parse_lir(location: &Node) -> Result<Location, ErrorResponse> {
+pub fn parse_lir_v2(location: &Node) -> Result<Location, ErrorResponse> {
+    // this still needs error refactoring
+    let ojp_node = OjpNode(location);
+    Ok(Location {
+        stop_place_ref: ojp_node
+            .text_of("StopPlaceRef")
+            .ok_or(ErrorResponse::ParseError("StopPlaceRef".to_string()))?,
+        stop_place_name: ojp_node
+            .text_tag_of("StopPlaceName")
+            .ok_or(ErrorResponse::ParseError("StopPlaceName".to_string()))?,
+        location_name: ojp_node
+            .text_tag_of("LocationName")
+            .ok_or(ErrorResponse::ParseError("LocationName".to_string()))?,
+        coordinates: Coordinates {
+            lng: ojp_node
+                .text_of("Longitude")
+                .ok_or(ErrorResponse::ParseError("Longitude".to_string()))?
+                .parse::<f64>()
+                .map_err(|_| {
+                    ErrorResponse::ParseError("can't parse <Longitude> to float".to_string())
+                })?,
+            lat: ojp_node
+                .text_of("Latitude")
+                .ok_or(ErrorResponse::ParseError("Latitude".to_string()))?
+                .parse::<f64>()
+                .map_err(|_| {
+                    ErrorResponse::ParseError("can't parse <Latitude> to float".to_string())
+                })?,
+        },
+    })
+}
+
+pub fn parse_lir_v1(location: &Node) -> Result<Location, ErrorResponse> {
     // NOTE: this is dangerous, to reuse iterator everything has to be parsed in the right order
     // we might adapt this in the future
     let mut desc = location.descendants();
