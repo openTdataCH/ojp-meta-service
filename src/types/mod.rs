@@ -1,9 +1,11 @@
-use std::str::FromStr;
+use std::{num::ParseFloatError, str::FromStr};
 
 use dotenvy_macro::dotenv;
 use rocket::serde::json::Json;
 use roxmltree::Node;
 use serde::{Deserialize, Serialize};
+
+// ------------- ERRORS --------------- //
 
 #[derive(Debug, Responder)]
 pub enum ErrorResponse {
@@ -29,6 +31,20 @@ impl ErrorResponse {
 pub struct ErrorMessage {
     pub message: String,
 }
+
+impl From<ParseFloatError> for ErrorResponse {
+    fn from(source: ParseFloatError) -> Self {
+        Self::ParseError(source.to_string())
+    }
+}
+
+impl From<String> for ErrorResponse {
+    fn from(source: String) -> Self {
+        Self::ParseError(source.to_string())
+    }
+}
+
+// ------------- SYSTEM --------------- //
 
 #[derive(Debug, PartialEq, Serialize)]
 pub enum System {
@@ -163,28 +179,22 @@ struct PlaceRef {
 pub struct OjpNode<'a>(pub &'a Node<'a, 'a>);
 
 impl OjpNode<'_> {
-    pub fn tag_name(&self, name: &str) -> Option<Node> {
-        self.0.descendants().find(|n| n.has_tag_name(name))
+    pub fn tag_name(&self, name: &str) -> Result<Node, ErrorResponse> {
+        Ok(self
+            .0
+            .descendants()
+            .find(|n| n.has_tag_name(name))
+            .ok_or(format!("<no node with tag name <{name}>"))?)
+    }
+    pub fn text_of(&self, name: &str) -> Result<String, ErrorResponse> {
+        Ok(self
+            .tag_name(name)?
+            .text()
+            .ok_or(format!("node with tag name <{name}> contains no text"))?
+            .to_string())
     }
 
-    pub fn text_of(&self, name: &str) -> Option<String> {
-        Some(
-            self.0
-                .descendants()
-                .find(|n| n.has_tag_name(name))?
-                .text()?
-                .to_string(),
-        )
-    }
-    pub fn text_tag_of(&self, name: &str) -> Option<String> {
-        Some(
-            self.0
-                .descendants()
-                .find(|n| n.has_tag_name(name))?
-                .descendants()
-                .find(|n| n.has_tag_name("Text"))?
-                .text()?
-                .to_string(),
-        )
+    pub fn text_tag_of(&self, name: &str) -> Result<String, ErrorResponse> {
+        Ok(OjpNode(&OjpNode(&self.tag_name(name)?).0).text_of("Text")?)
     }
 }
