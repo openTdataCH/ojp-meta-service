@@ -1,9 +1,11 @@
-use std::str::FromStr;
+use std::{num::ParseFloatError, str::FromStr};
 
 use dotenvy_macro::dotenv;
 use rocket::serde::json::Json;
 use roxmltree::Node;
 use serde::{Deserialize, Serialize};
+
+// ------------- ERRORS --------------- //
 
 #[derive(Debug, Responder)]
 pub enum ErrorResponse {
@@ -29,6 +31,14 @@ impl ErrorResponse {
 pub struct ErrorMessage {
     pub message: String,
 }
+
+impl From<ParseFloatError> for ErrorResponse {
+    fn from(source: ParseFloatError) -> Self {
+        Self::ParseError(source.to_string())
+    }
+}
+
+// ------------- SYSTEM --------------- //
 
 #[derive(Debug, PartialEq, Serialize)]
 pub enum System {
