@@ -10,10 +10,12 @@ mod types;
 use std::str::FromStr;
 
 use parser::*;
-use requests::format_lir;
+use requests::{format_epr, format_lir};
 use reqwest::Client;
 use rocket::fs::{relative, FileServer};
+use rocket::futures::{stream, StreamExt};
 use rocket::serde::json::Json;
+use rocket::State;
 use types::*;
 
 #[macro_use]
@@ -25,6 +27,16 @@ fn echo(lir: Json<LocationInformationRequest>) -> Json<LocationInformationReques
     Json(lir.into_inner())
 }
 
+// example route showing how to receive and unpack json
+#[get("/exchange?<system>")]
+fn exchange<'a>(
+    system: &'a str,
+    exchange_points: &'a State<ExchangePointState>,
+) -> Result<Json<&'a Vec<ExchangePoint>>, ErrorResponse> {
+    let sys = System::from_str(system)?;
+    Ok(Json(exchange_points.from_system(sys)))
+}
+
 // example route showing how to back propagate error and request system
 #[get("/system/<id>")]
 fn system(id: &str) -> Result<Json<SystemConfig>, ErrorResponse> {
@@ -32,12 +44,12 @@ fn system(id: &str) -> Result<Json<SystemConfig>, ErrorResponse> {
 }
 
 // handler to query a location request
-#[get("/location/<query>?<system>&<lat>&<lng>")]
+#[get("/location/<query>?<system>&<_lat>&<_lng>")]
 async fn location(
     query: &str,
     system: &str,
-    lat: Option<&str>,
-    lng: Option<&str>,
+    _lat: Option<&str>,
+    _lng: Option<&str>,
 ) -> Result<Json<Vec<Location>>, ErrorResponse> {
     let system = System::from_str(system)?.get_config();
     // example reqwest
@@ -83,8 +95,51 @@ fn index() -> &'static str {
 }
 
 #[launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
+    let nr_of_reqs: usize = 1;
+
+    let exchange_points: ExchangePointState = ExchangePointState {
+        ch: vec![],
+        at: vec![],
+        it: vec![],
+    };
+
+    let client = Client::new();
+
+    let urls: Vec<SystemConfig> = vec![System::CH.get_config()];
+
+    let bodies = stream::iter(urls)
+        .map(|system| {
+            let client = &client;
+            println!("{}", format_epr(system.req_ref));
+            async move {
+                let resp = client
+                    .post(system.url)
+                    .bearer_auth(system.key)
+                    .header("Content-Type", "text/xml")
+                    .body(format_epr(system.req_ref))
+                    .send()
+                    .await?;
+                let xml = resp.text().await?;
+                let result: Result<ExchangePointResponse, reqwest::Error> =
+                    Ok(ExchangePointResponse { id: system.id, xml });
+                result
+            }
+        })
+        .buffer_unordered(nr_of_reqs);
+
+    bodies
+        .for_each(|res| async {
+            match res {
+                // parse exchange points and write them into exchpnt struct
+                Ok(res) => println!("{:?}", res.id),
+                Err(e) => eprintln!("Got an error writing exchange points: {}", e),
+            }
+        })
+        .await;
+
     rocket::build()
-        .mount("/", routes![index, location, system, echo])
+        .mount("/", routes![index, location, system, echo, exchange])
         .mount("/docs", FileServer::from(relative!("/docs")))
+        .manage(exchange_points)
 }
