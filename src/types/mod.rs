@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use dotenvy_macro::dotenv;
 use rocket::serde::json::Json;
+use roxmltree::Node;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Responder)]
@@ -156,4 +157,34 @@ pub struct GeoRestriction {
 struct PlaceRef {
     stop_place_ref: String,
     name: String,
+}
+
+// wrapper struct around roxmltree::Node so we can impl some methods
+pub struct OjpNode<'a>(pub &'a Node<'a, 'a>);
+
+impl OjpNode<'_> {
+    pub fn tag_name(&self, name: &str) -> Option<Node> {
+        self.0.descendants().find(|n| n.has_tag_name(name))
+    }
+
+    pub fn text_of(&self, name: &str) -> Option<String> {
+        Some(
+            self.0
+                .descendants()
+                .find(|n| n.has_tag_name(name))?
+                .text()?
+                .to_string(),
+        )
+    }
+    pub fn text_tag_of(&self, name: &str) -> Option<String> {
+        Some(
+            self.0
+                .descendants()
+                .find(|n| n.has_tag_name(name))?
+                .descendants()
+                .find(|n| n.has_tag_name("Text"))?
+                .text()?
+                .to_string(),
+        )
+    }
 }
