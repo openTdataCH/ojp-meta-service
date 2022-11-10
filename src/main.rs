@@ -106,12 +106,11 @@ async fn rocket() -> _ {
 
     let client = Client::new();
 
-    let urls: Vec<SystemConfig> = vec![System::CH.get_config()];
+    let system_configs: Vec<SystemConfig> = vec![System::CH.get_config()];
 
-    let bodies = stream::iter(urls)
+    let bodies = stream::iter(system_configs)
         .map(|system| {
             let client = &client;
-            println!("{}", format_epr(system.req_ref));
             async move {
                 let resp = client
                     .post(system.url)
