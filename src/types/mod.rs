@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 pub enum ErrorResponse {
     #[response(status = 500, content_type = "text")]
     ReqwestError(String),
+    #[response(status = 500, content_type = "text")]
+    ParseError(String),
     #[response(status = 400, content_type = "text")]
     SystemNotFoundError(String),
     #[response(status = 500, content_type = "json")]
@@ -93,10 +95,10 @@ pub struct LocationInformationRequest {
 
 // location information response
 #[derive(Debug, PartialEq, Serialize)]
-pub struct Location<'a> {
-    pub stop_place_ref: &'a str,
-    pub stop_place_name: &'a str,
-    pub location_name: &'a str,
+pub struct Location {
+    pub stop_place_ref: String,
+    pub stop_place_name: String,
+    pub location_name: String,
     pub coordinates: Coordinates,
 }
 
