@@ -71,7 +71,7 @@ async fn location(
         .unwrap();
     let locs = nodes
         .iter()
-        .map(|n| parse_lir_v2(&n))
+        .map(|n| parse_lir(&n))
         .collect::<Result<Vec<Location>, ErrorResponse>>()?;
     Ok(Json(locs))
 }
