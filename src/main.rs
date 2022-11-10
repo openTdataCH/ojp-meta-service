@@ -33,35 +33,47 @@ fn system(id: &str) -> Result<Json<SystemConfig>, ErrorResponse> {
 
 // handler to query a location request
 #[get("/location/<query>?<system>&<lat>&<lng>")]
-async fn location<'a>(
-    query: &'a str,
-    system: &'a str,
-    lat: Option<&'a str>,
-    lng: Option<&'a str>,
-) -> Result<Json<Vec<Location<'a>>>, ErrorResponse> {
+async fn location(
+    query: &str,
+    system: &str,
+    lat: Option<&str>,
+    lng: Option<&str>,
+) -> Result<Json<Vec<Location>>, ErrorResponse> {
     let system = System::from_str(system)?.get_config();
     // example reqwest
     // TODO use parallel requests to query multiple systems
     // TODO write a function for this stuff to keep routes clean
-    let _res = Client::new()
+    let res = Client::new()
         .post(system.url)
         .bearer_auth(system.key)
         .header("Content-Type", "text/xml")
-        .body(format_lir(query, 2, false))
+        .body(format_lir(query, 10, false))
         .send()
         .await
+        .map_err(|_| ErrorResponse::ReqwestError("OJP-Service can't be reached...".to_string()))?
+        .text()
+        .await
         // with map_err we can map a reqwest error (which we can't control) to a custom error
-        .map_err(|_| ErrorResponse::ReqwestError("OJP-Service can't be reached...".to_string()))?;
-    // example: return an array of locations
-    Ok(Json(vec![Location {
-        stop_place_ref: "xyz",
-        stop_place_name: "xyz",
-        location_name: query,
-        coordinates: Coordinates {
-            lat: 47.7,
-            lng: 7.1,
-        },
-    }]))
+        .map_err(|_| {
+            ErrorResponse::ReqwestError("OJP-Service repsonse can't be read...".to_string())
+        })?;
+    let doc = roxmltree::Document::parse(&res).unwrap();
+    let nodes = doc
+        .descendants()
+        .find(|n| n.has_tag_name("OJPLocationInformationDelivery"))
+        .and_then(|f| {
+            Some(
+                f.children()
+                    .filter(|n| n.has_tag_name("Location"))
+                    .collect::<Vec<roxmltree::Node>>(),
+            )
+        })
+        .unwrap();
+    let locs = nodes
+        .iter()
+        .map(|n| parse_lir(&n))
+        .collect::<Result<Vec<Location>, ErrorResponse>>()?;
+    Ok(Json(locs))
 }
 
 // index, perfect place to mount a demo application (via FileServer like openapi)
