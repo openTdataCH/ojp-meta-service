@@ -2,12 +2,15 @@ use std::str::FromStr;
 
 use dotenvy_macro::dotenv;
 use rocket::serde::json::Json;
+use roxmltree::Node;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Responder)]
 pub enum ErrorResponse {
     #[response(status = 500, content_type = "text")]
     ReqwestError(String),
+    #[response(status = 500, content_type = "text")]
+    ParseError(String),
     #[response(status = 400, content_type = "text")]
     SystemNotFoundError(String),
     #[response(status = 500, content_type = "json")]
@@ -93,10 +96,10 @@ pub struct LocationInformationRequest {
 
 // location information response
 #[derive(Debug, PartialEq, Serialize)]
-pub struct Location<'a> {
-    pub stop_place_ref: &'a str,
-    pub stop_place_name: &'a str,
-    pub location_name: &'a str,
+pub struct Location {
+    pub stop_place_ref: String,
+    pub stop_place_name: String,
+    pub location_name: String,
     pub coordinates: Coordinates,
 }
 
@@ -154,4 +157,34 @@ pub struct GeoRestriction {
 struct PlaceRef {
     stop_place_ref: String,
     name: String,
+}
+
+// wrapper struct around roxmltree::Node so we can impl some methods
+pub struct OjpNode<'a>(pub &'a Node<'a, 'a>);
+
+impl OjpNode<'_> {
+    pub fn tag_name(&self, name: &str) -> Option<Node> {
+        self.0.descendants().find(|n| n.has_tag_name(name))
+    }
+
+    pub fn text_of(&self, name: &str) -> Option<String> {
+        Some(
+            self.0
+                .descendants()
+                .find(|n| n.has_tag_name(name))?
+                .text()?
+                .to_string(),
+        )
+    }
+    pub fn text_tag_of(&self, name: &str) -> Option<String> {
+        Some(
+            self.0
+                .descendants()
+                .find(|n| n.has_tag_name(name))?
+                .descendants()
+                .find(|n| n.has_tag_name("Text"))?
+                .text()?
+                .to_string(),
+        )
+    }
 }
