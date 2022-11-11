@@ -55,9 +55,10 @@ pub enum System {
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct SystemConfig {
-    pub id: &'static str,
+    pub req_ref: &'static str,
     pub key: &'static str,
     pub url: &'static str,
+    pub id: System,
 }
 
 impl FromStr for System {
@@ -77,24 +78,52 @@ impl FromStr for System {
 
 impl System {
     pub const fn get_config(&self) -> SystemConfig {
-        match &self {
+        match self {
             System::CH => SystemConfig {
-                id: "ch",
+                req_ref: dotenv!("CH_REQ_REF"),
                 key: dotenv!("CH_KEY"),
                 url: dotenv!("CH_URL"),
+                id: System::CH,
             },
             System::AT => SystemConfig {
-                id: "at",
+                req_ref: dotenv!("AT_REQ_REF"),
                 key: dotenv!("AT_KEY"),
                 url: dotenv!("AT_URL"),
+                id: System::AT,
             },
             System::IT => SystemConfig {
-                id: "it",
+                req_ref: dotenv!("IT_REQ_REF"),
                 key: dotenv!("IT_KEY"),
                 url: dotenv!("IT_URL"),
+                id: System::IT,
             },
         }
     }
+
+    pub const fn get_all() -> [System; 3] {
+        [System::CH, System::AT, System::IT]
+    }
+}
+
+// ------------ State -------------//
+pub struct ExchangePointState {
+    pub ch: Vec<ExchangePoint>,
+    pub at: Vec<ExchangePoint>,
+    pub it: Vec<ExchangePoint>,
+}
+
+impl ExchangePointState {
+    pub fn from_system(&self, sys: System) -> &Vec<ExchangePoint> {
+        match sys {
+            System::CH => &self.ch,
+            System::AT => &self.at,
+            System::IT => &self.it,
+        }
+    }
+}
+pub struct ExchangePointResponse {
+    pub id: System,
+    pub xml: String,
 }
 
 // location information request
@@ -151,6 +180,7 @@ pub struct ExchangePointRequest {
     continue_at: usize,
 }
 
+#[derive(Clone, Serialize)]
 pub struct ExchangePoint {
     place_ref: String,
     location_name: String,
@@ -158,7 +188,7 @@ pub struct ExchangePoint {
     pt_mode: String,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Coordinates {
     pub lat: f64,
     pub lng: f64,
