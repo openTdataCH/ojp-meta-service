@@ -106,7 +106,8 @@ async fn rocket() -> _ {
 
     let client = Client::new();
 
-    let system_configs: Vec<SystemConfig> = vec![System::CH.get_config()];
+    let system_configs: Vec<SystemConfig> =
+        System::get_all().iter().map(|s| s.get_config()).collect();
 
     let bodies = stream::iter(system_configs)
         .map(|system| {
@@ -120,6 +121,7 @@ async fn rocket() -> _ {
                     .send()
                     .await?;
                 let xml = resp.text().await?;
+                println!("{:?}", system.id);
                 let result: Result<ExchangePointResponse, reqwest::Error> =
                     Ok(ExchangePointResponse { id: system.id, xml });
                 result
@@ -131,7 +133,7 @@ async fn rocket() -> _ {
         .for_each(|res| async {
             match res {
                 // parse exchange points and write them into exchpnt struct
-                Ok(res) => println!("{:?}", res.id),
+                Ok(_res) => println!("unpack res here"),
                 Err(e) => eprintln!("Got an error writing exchange points: {}", e),
             }
         })

@@ -78,7 +78,7 @@ impl FromStr for System {
 
 impl System {
     pub const fn get_config(&self) -> SystemConfig {
-        match &self {
+        match self {
             System::CH => SystemConfig {
                 req_ref: dotenv!("CH_REQ_REF"),
                 key: dotenv!("CH_KEY"),
@@ -98,6 +98,10 @@ impl System {
                 id: System::IT,
             },
         }
+    }
+
+    pub const fn get_all() -> [System; 3] {
+        [System::CH, System::AT, System::IT]
     }
 }
 
