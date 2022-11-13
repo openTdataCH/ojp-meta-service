@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 // ------------- ERRORS --------------- //
 
-#[derive(Debug, Responder)]
+#[derive(Debug, Responder, PartialEq)]
 pub enum ErrorResponse {
     #[response(status = 500, content_type = "text")]
     ReqwestError(String),
@@ -27,13 +27,19 @@ impl ErrorResponse {
     }
 }
 
-#[derive(Debug, Serialize, Responder)]
+#[derive(Debug, Serialize, Responder, PartialEq)]
 pub struct ErrorMessage {
     pub message: String,
 }
 
 impl From<ParseFloatError> for ErrorResponse {
     fn from(source: ParseFloatError) -> Self {
+        Self::ParseError(source.to_string())
+    }
+}
+
+impl From<roxmltree::Error> for ErrorResponse {
+    fn from(source: roxmltree::Error) -> Self {
         Self::ParseError(source.to_string())
     }
 }
