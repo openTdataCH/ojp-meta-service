@@ -1,19 +1,42 @@
 openapi: "3.0.0"
 info:
   title: OJP Meta Service
+  description: "Meta Service to interact with all Linking Alps OJP services"
   version: 1.0.0
+server:
+  - url: "http://localhost:8080/docs/openapi.yml"
+    descripton: local dev server
 paths:
-  /:
-    get:
-      operationId: helloworld
-      summary: get hello world
+  /lir:
+    GET:
+      summary: "Get information of a location"
       responses:
         "200":
-          description: |-
-            200 response
+          description: "LocationInformationRequest "
           content:
             application/json:
               schema:
-                type: string
-                example: "Hello world!"
+                $ref: "#/components/schemas/LocationInformationResponse"
                 
+components:
+  schemas:
+    LocationInformationResponse:
+      description: "Information of a location" 
+      type: "object"
+      Properties:
+        stop_place_ref:
+          type: "string"
+          description: "Unique reference value to identify a location"
+          example: "8507000"
+        stop_place_name:
+          type: "string"
+          description: "Name of the stop place reference"
+          example: "Bern"
+        location_name:
+          type: "string"
+          description: "Name of a location"
+          example: "Bern (Bern)"
+        Coordinates:
+          type: "struct"
+          items:
+            $ref: "TODO"
