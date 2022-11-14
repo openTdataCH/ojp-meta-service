@@ -45,3 +45,62 @@ fn test_lir_parsing_ok() {
         )
     );
 }
+
+#[test]
+fn test_epr_parsing_ok() {
+    assert_eq!(
+        Ok(ExchangePoint {
+            place_ref: "1300033".to_string(),
+            location_name: "Aosta".to_string(),
+            coordinates: Coordinates {
+                lat: 45.73516,
+                lng: 7.32432
+            },
+            pt_mode: "bus".to_string(),
+        }),
+        parse_epr(
+            &roxmltree::Document::parse(
+                r#"<Place>
+    <Place>
+      <StopPlace>
+        <StopPlaceRef>1300033</StopPlaceRef>
+        <StopPlaceName>
+          <Text xml:lang="de">Aosta, Autostazione</Text>
+        </StopPlaceName>
+        <PrivateCode>
+          <System>EFA</System>
+          <Value>173775</Value>
+        </PrivateCode>
+        <PrivateCode>
+          <System>LA-ExchangePoint-ID</System>
+          <Value>it:itc:StopPlace:ITRP-ST0070039001:</Value>
+        </PrivateCode>
+        <TopographicPlaceRef>22007003:1</TopographicPlaceRef>
+      </StopPlace>
+      <LocationName>
+        <Text xml:lang="de">Aosta</Text>
+      </LocationName>
+      <GeoPosition>
+        <Longitude>7.32432</Longitude>
+        <Latitude>45.73516</Latitude>
+      </GeoPosition>
+      <Extension>
+        <PlaceExtensionStructure>
+          <ExchangePoint>
+            <WaitingTime>PT5M</WaitingTime>
+          </ExchangePoint>
+        </PlaceExtensionStructure>
+      </Extension>
+    </Place>
+    <BorderPoint>false</BorderPoint>
+    <Mode>
+      <PtMode>bus</PtMode>
+      <BusSubmode>localBusService</BusSubmode>
+    </Mode>
+  </Place>"#
+            )
+            .unwrap()
+            .root()
+        )
+    );
+}

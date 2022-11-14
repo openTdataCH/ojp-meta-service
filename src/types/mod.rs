@@ -186,12 +186,12 @@ pub struct ExchangePointRequest {
     continue_at: usize,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 pub struct ExchangePoint {
-    place_ref: String,
-    location_name: String,
-    coordinates: Coordinates,
-    pt_mode: String,
+    pub place_ref: String,
+    pub location_name: String,
+    pub coordinates: Coordinates,
+    pub pt_mode: String,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
