@@ -94,10 +94,13 @@ fn index() -> &'static str {
     "Hello, world!"
 }
 
+//Entry Point of the application. Everything gets started here.
 #[launch]
 async fn rocket() -> _ {
+    //number of requests for caching
     let nr_of_reqs: usize = 1;
 
+    //the exchange points get cached in these vectors
     let exchange_points: ExchangePointState = ExchangePointState {
         ch: vec![],
         at: vec![],
@@ -106,9 +109,11 @@ async fn rocket() -> _ {
 
     let client = Client::new();
 
+    //gather all the configs for there different systems 
     let system_configs: Vec<SystemConfig> =
         System::get_all().iter().map(|s| s.get_config()).collect();
 
+    //get the exchange points from the different systems and return them as ExchangePointResponses
     let bodies = stream::iter(system_configs)
         .map(|system| {
             let client = &client;
@@ -129,6 +134,7 @@ async fn rocket() -> _ {
         })
         .buffer_unordered(nr_of_reqs);
 
+    //Map the result to structs
     bodies
         .for_each(|res| async {
             match res {
@@ -139,6 +145,7 @@ async fn rocket() -> _ {
         })
         .await;
 
+    //build the app
     rocket::build()
         .mount("/", routes![index, location, system, echo, exchange])
         .mount("/docs", FileServer::from(relative!("/docs")))

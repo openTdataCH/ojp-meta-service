@@ -4,6 +4,7 @@ use crate::types::{Coordinates, ErrorResponse, OjpNode};
 
 use super::types::{Location, ExchangePoint};
 
+//The Result of a Location Information Request gets parsed into a Location Object for further processing
 pub fn parse_lir(location: &Node) -> Result<Location, ErrorResponse> {
     let ojp_node = OjpNode(location);
     Ok(Location {
@@ -17,6 +18,7 @@ pub fn parse_lir(location: &Node) -> Result<Location, ErrorResponse> {
     })
 }
 
+//The Result of an Exchange Point Request gets parsed into an ExchangePoint Object for further processing
 pub fn parse_epr(exchange_point: &Node) -> Result<ExchangePoint, ErrorResponse> {
     let ojp_node = OjpNode(exchange_point);
     Ok(ExchangePoint {

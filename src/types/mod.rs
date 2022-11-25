@@ -52,6 +52,7 @@ impl From<String> for ErrorResponse {
 
 // ------------- SYSTEM --------------- //
 
+//The Different Systems available.
 #[derive(Debug, PartialEq, Serialize)]
 pub enum System {
     CH,
@@ -59,6 +60,7 @@ pub enum System {
     IT,
 }
 
+//Values belonging to the systems. Requestor reference, a key for authentication, an url and an ID.
 #[derive(Debug, PartialEq, Serialize)]
 pub struct SystemConfig {
     pub req_ref: &'static str,
@@ -67,6 +69,7 @@ pub struct SystemConfig {
     pub id: System,
 }
 
+//map easy identifiers to the different available systems. Error is received when the system doesn't exist.
 impl FromStr for System {
     type Err = ErrorResponse;
 
@@ -82,6 +85,7 @@ impl FromStr for System {
     }
 }
 
+//The different Systems get "built" with information from the .env File.
 impl System {
     pub const fn get_config(&self) -> SystemConfig {
         match self {
@@ -112,12 +116,15 @@ impl System {
 }
 
 // ------------ State -------------//
+
+//Struct where all the Exchange Points are being cached for faster access time.
 pub struct ExchangePointState {
     pub ch: Vec<ExchangePoint>,
     pub at: Vec<ExchangePoint>,
     pub it: Vec<ExchangePoint>,
 }
 
+//The Cached Exchanged points all belong to their respective system and therefore have to be mapped
 impl ExchangePointState {
     pub fn from_system(&self, sys: System) -> &Vec<ExchangePoint> {
         match sys {
@@ -127,6 +134,8 @@ impl ExchangePointState {
         }
     }
 }
+
+//Response. Id is needed to identify the system and xml is the result of an EPR.
 pub struct ExchangePointResponse {
     pub id: System,
     pub xml: String,

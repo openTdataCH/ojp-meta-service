@@ -1,6 +1,11 @@
 use chrono::{DateTime, SecondsFormat, Utc};
 use std::time::SystemTime;
 
+//Construct for the Location Information Request. The following Parameters are dynamic:
+//timestamp -> Typical timestamp telling the time of the request
+//query -> The Location which the Request is trying to get information from
+//nr_of_results -> Maximum Number of results to display
+//include_pt_modes -> ??
 pub fn format_lir(query: &str, nr_of_results: usize, include_pt_modes: bool) -> String {
     let timestamp =
         DateTime::<Utc>::from(SystemTime::now()).to_rfc3339_opts(SecondsFormat::Millis, true);
@@ -28,6 +33,10 @@ pub fn format_lir(query: &str, nr_of_results: usize, include_pt_modes: bool) -> 
     )
 }
 
+
+//Construct for the Location Information Request. The following Parameters are dynamic:
+//timestamp -> Typical timestamp telling the time of the request
+//requestor_ref -> Reference, can be anything. Tells where the request is coming from. Some Endpoints use that for authentication.
 pub fn format_epr(requestor_ref: &str) -> String {
     let timestamp =
         DateTime::<Utc>::from(SystemTime::now()).to_rfc3339_opts(SecondsFormat::Millis, true);
