@@ -105,6 +105,7 @@ async fn rocket() -> _ {
         ch: vec![],
         at: vec![],
         it: vec![],
+        slo: vec![],
     };
 
     let client = Client::new();
