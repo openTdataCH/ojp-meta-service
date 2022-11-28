@@ -58,6 +58,7 @@ pub enum System {
     CH,
     AT,
     IT,
+    SLO,
 }
 
 //Values belonging to the systems. Requestor reference, a key for authentication, an url and an ID.
@@ -78,6 +79,7 @@ impl FromStr for System {
             "ch" => Ok(System::CH),
             "at" => Ok(System::AT),
             "it" => Ok(System::IT),
+            "slo" => Ok(System::SLO),
             x => Err(ErrorResponse::SystemNotFoundError(format!(
                 "system with identifier {x} not found"
             ))),
@@ -107,11 +109,17 @@ impl System {
                 url: dotenv!("IT_URL"),
                 id: System::IT,
             },
+            System::SLO => SystemConfig {
+                req_ref: dotenv!("SLO_REQ_REF"),
+                key: dotenv!("SLO_KEY"),
+                url: dotenv!("SLO_URL"),
+                id: System::SLO,
+            },
         }
     }
 
-    pub const fn get_all() -> [System; 3] {
-        [System::CH, System::AT, System::IT]
+    pub const fn get_all() -> [System; 4] {
+        [System::CH, System::AT, System::IT, System::SLO ]
     }
 }
 
@@ -122,6 +130,7 @@ pub struct ExchangePointState {
     pub ch: Vec<ExchangePoint>,
     pub at: Vec<ExchangePoint>,
     pub it: Vec<ExchangePoint>,
+    pub slo: Vec<ExchangePoint>,
 }
 
 //The Cached Exchanged points all belong to their respective system and therefore have to be mapped
@@ -131,6 +140,7 @@ impl ExchangePointState {
             System::CH => &self.ch,
             System::AT => &self.at,
             System::IT => &self.it,
+            System::SLO => &self.slo,
         }
     }
 }
