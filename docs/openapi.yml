@@ -1,19 +1,152 @@
 openapi: "3.0.0"
 info:
   title: OJP Meta Service
+  description: "Meta Service to interact with all Linking Alps OJP services"
   version: 1.0.0
+server:
+  - url: "http://localhost:8080/docs/openapi.yml"
+    descripton: local dev server
 paths:
-  /:
-    get:
-      operationId: helloworld
-      summary: get hello world
-      responses:
+  /lir:
+    post:
+      summary: "Get information of a location"
+      consumes:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "location"
+          description: "The location for which information is required."
+          schema:
+            type: "object"
+            properties:
+              system:
+                type: "string"
+                description: "The target system to get the information from"
+                example: "CH"
+              stop_place_name:
+                type: "string"
+                description: "The name of the location of which one wants more information"
+                example: "CH"
+              amount_of_results:
+                type: "integer"
+                description: "The max. amount of responses to send"
+                example: 5
+      response:
         "200":
-          description: |-
-            200 response
+          description: "Successfully got the information to a location"
           content:
             application/json:
               schema:
-                type: string
-                example: "Hello world!"
+                $ref: "#/components/schemas/LocationInformationResponses"
+
+  /triprequest:
+    post:
+      summary: "Get possible trips between two destinations"
+      consumes: 
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "triprequest"
+          description: "The requested trip."
+          schema:
+            type: "object"
+            properties:
+              start_system:
+                type: "string"
+                description: "The system of the start location"
+                example: "CH"
+              start_location_ref:
+                type: "string"
+                description: "Reference of the start location"
+                example: "8507000"
+              stop_system:
+                type: "string"
+                description: "The system of the stop location"
+                example: "CH"
+              stop_location_ref:
+                type: "string"
+                description: "Reference of the stop location"
+                example: "8507000"
+              departure_date_time:
+                type: "string"
+                description: "Departure date and time"
+                example: "2022-07-21T17:32:28Z"
+      response:
+        "200":
+          description: "LocationInformationRequest "
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trips"
+
                 
+components:
+  schemas:
+    LocationInformationResponse:
+      type: "object"
+      description: "Information of a location" 
+      Properties:
+        stop_place_ref:
+          type: "string"
+          description: "Unique reference value to identify a location"
+          example: "8507000"
+        stop_place_name:
+          type: "string"
+          description: "Name of the stop place reference"
+          example: "Bern"
+        location_name:
+          type: "string"
+          description: "Name of a location"
+          example: "Bern (Bern)"
+        Coordinates:
+          type: "struct"
+          items:
+            $ref: "#/components/schemas/Coordinates"
+
+    LocationInformationResponses:
+    type: "array"
+    items:
+      $ref: "#/components/schemas/LocationInformationResponse"
+
+    Coordinates:
+      type: "object"
+      description: "Coordinates of a location"
+      properties:
+        lat:
+          type: "f64"
+          description: "latitude"
+          example: "45.73516"
+        lng:
+          type: "f64"
+          description: "longitude"
+          example: "7.32432"
+
+    Trip:
+      type: "object"
+      description: "Trip between two lcoations"
+      properties:
+        start_location_ref:
+          type: "string"
+          description: "Reference of the start location"
+          example: "8507000"
+        stop_location_ref:
+          type: "string"
+          description: "Reference of the stop location"
+          example: "8507000"
+        start_date_time:
+          type: "string"
+          description: "date time of departure"
+          example: "2022-07-21T17:32:28Z"
+        stop_date_time:
+          type: "string"
+          description: "date time of arrival"
+          example: "2022-07-21T17:32:28Z"
+        duration:
+          type: "string"
+          description: "Duration of the trip"
+          example: "1:32:28"
+    Trips:
+      type: "array"
+      items:
+        $ref: "#/components/schemas/Trip"
+      
