@@ -55,7 +55,7 @@ impl From<String> for ErrorResponse {
 
 // ------------- SYSTEM --------------- //
 
-#[derive(Debug, PartialEq, Serialize, Eq, Hash)]
+#[derive(Debug, PartialEq, Serialize, Eq, Hash, Clone, Copy)]
 pub enum System {
     CH,
     AT,
@@ -128,24 +128,8 @@ impl System {
 // ------------ State -------------//
 
 //Struct where all the Exchange Points are being cached for faster access time.
-pub struct ExchangePointState {
-    pub ch: Vec<ExchangePoint>,
-    pub at: Vec<ExchangePoint>,
-    pub it: Vec<ExchangePoint>,
-    pub slo: Vec<ExchangePoint>,
-}
-
-//The Cached Exchanged points all belong to their respective system and therefore have to be mapped
-impl ExchangePointState {
-    pub fn from_system(&self, sys: System) -> &Vec<ExchangePoint> {
-        match sys {
-            System::CH => &self.ch,
-            System::AT => &self.at,
-            System::IT => &self.it,
-            System::SLO => &self.slo,
-        }
-    }
-}
+#[derive(Debug)]
+pub struct ExchangePointState(pub HashMap<System, Vec<ExchangePoint>>);
 
 //Response. Id is needed to identify the system and xml is the result of an EPR.
 pub struct ExchangePointResponse {
@@ -246,12 +230,11 @@ impl OjpNode<'_> {
     }
 }
 
-pub struct OjpDoc<'a>(pub &'a Document<'a>);
+pub struct OjpDoc<'a>(pub Document<'a>);
 
 impl<'a> OjpDoc<'a> {
     pub fn new(xml: &'a str) -> Result<Self, ErrorResponse> {
-        let doc = Document::parse(xml)?;
-        let ojp = OjpDoc(&doc);
+        let ojp = OjpDoc(Document::parse(xml)?);
         Ok(ojp)
     }
 
@@ -291,21 +274,21 @@ impl<'a> OjpDoc<'a> {
         }
     }
 
-    pub fn get_trips(&self) -> Result<Vec<Trip>, ErrorResponse> {
-        let trips = self
-            .0
-            .descendants()
-            .find(|n| n.has_tag_name("OJPTripDelivery"))
-            .ok_or("No trip delivery node found".to_string())?
-            .children()
-            .filter(|n| n.has_tag_name("TripResult"))
-            .collect::<Vec<Node>>();
-        match trips.len() {
-            0 => Err("No Trips found".to_string())?,
-            _ => Ok(trips
-                .iter()
-                .map(|e| parse_trip(e))
-                .collect::<Result<Vec<Trip>, ErrorResponse>>()?),
-        }
-    }
+    // pub fn get_trips(&self) -> Result<Vec<Trip>, ErrorResponse> {
+    //     let trips = self
+    //         .0
+    //         .descendants()
+    //         .find(|n| n.has_tag_name("OJPTripDelivery"))
+    //         .ok_or("No trip delivery node found".to_string())?
+    //         .children()
+    //         .filter(|n| n.has_tag_name("TripResult"))
+    //         .collect::<Vec<Node>>();
+    //     match trips.len() {
+    //         0 => Err("No Trips found".to_string())?,
+    //         _ => Ok(trips
+    //             .iter()
+    //             .map(|e| parse_trip(e))
+    //             .collect::<Result<Vec<Trip>, ErrorResponse>>()?),
+    //     }
+    // }
 }

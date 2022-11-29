@@ -49,7 +49,7 @@ pub fn format_epr(requestor_ref: &str) -> String {
                 <ojp:OJPExchangePointsRequest>
                     <RequestTimestamp>{timestamp}</RequestTimestamp>
                        <ojp:Params>
-                            <ojp:NumberOfResults>100</ojp:NumberOfResults>
+                            <ojp:NumberOfResults>10000</ojp:NumberOfResults>
                             <ojp:ContinueAt>0</ojp:ContinueAt>
                        </ojp:Params>
                 </ojp:OJPExchangePointsRequest>
