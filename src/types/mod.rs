@@ -1,9 +1,12 @@
-use std::{num::ParseFloatError, str::FromStr};
+use std::{collections::HashMap, num::ParseFloatError, str::FromStr};
 
+use chrono::{DateTime, NaiveDateTime};
 use dotenvy_macro::dotenv;
 use rocket::serde::json::Json;
-use roxmltree::Node;
+use roxmltree::{Document, Node};
 use serde::{Deserialize, Serialize};
+
+use crate::parser::{parse_epr, parse_lir};
 
 // ------------- ERRORS --------------- //
 
@@ -52,8 +55,7 @@ impl From<String> for ErrorResponse {
 
 // ------------- SYSTEM --------------- //
 
-//The Different Systems available.
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Eq, Hash)]
 pub enum System {
     CH,
     AT,
@@ -119,7 +121,7 @@ impl System {
     }
 
     pub const fn get_all() -> [System; 4] {
-        [System::CH, System::AT, System::IT, System::SLO ]
+        [System::CH, System::AT, System::IT, System::SLO]
     }
 }
 
@@ -175,16 +177,11 @@ pub struct Location {
 
 // trip request
 pub struct TripRequest {
-    origin: PlaceRef,
-    destination: PlaceRef,
+    origin: String,
+    destination: String,
     // maybe we need to use chrono::DateTime for this, depends on what we need to do
     dep_arr_time: String,
     intermediate_stops: bool,
-}
-
-pub struct TripResult {
-    id: String,
-    trip: Trip,
 }
 
 pub struct Trip {
@@ -192,8 +189,8 @@ pub struct Trip {
     duration: String,
     start_time: String,
     end_time: String,
-    transfers: usize,
-    legs: [TripLeg],
+    transfers: String,
+    legs: Vec<TripLeg>,
 }
 
 // not clear what this is, a trip seems to only ever have on leg what's the point of that
@@ -225,11 +222,6 @@ pub struct GeoRestriction {
     lower_right: Coordinates,
 }
 
-struct PlaceRef {
-    stop_place_ref: String,
-    name: String,
-}
-
 // wrapper struct around roxmltree::Node so we can impl some methods
 pub struct OjpNode<'a>(pub &'a Node<'a, 'a>);
 
@@ -251,5 +243,69 @@ impl OjpNode<'_> {
 
     pub fn text_tag_of(&self, name: &str) -> Result<String, ErrorResponse> {
         Ok(OjpNode(&OjpNode(&self.tag_name(name)?).0).text_of("Text")?)
+    }
+}
+
+pub struct OjpDoc<'a>(pub &'a Document<'a>);
+
+impl<'a> OjpDoc<'a> {
+    pub fn new(xml: &'a str) -> Result<Self, ErrorResponse> {
+        let doc = Document::parse(xml)?;
+        let ojp = OjpDoc(&doc);
+        Ok(ojp)
+    }
+
+    pub fn get_locations(&self) -> Result<Vec<Location>, ErrorResponse> {
+        let locations = self
+            .0
+            .descendants()
+            .find(|n| n.has_tag_name("OJPLocationInformationDelivery"))
+            .ok_or("No location delivery node found".to_string())?
+            .children()
+            .filter(|n| n.has_tag_name("Location"))
+            .collect::<Vec<Node>>();
+        match locations.len() {
+            0 => Err("No Locations found".to_string())?,
+            _ => Ok(locations
+                .iter()
+                .map(|l| parse_lir(l))
+                .collect::<Result<Vec<Location>, ErrorResponse>>()?),
+        }
+    }
+
+    pub fn get_exchange_points(&self) -> Result<Vec<ExchangePoint>, ErrorResponse> {
+        let expts = self
+            .0
+            .descendants()
+            .find(|n| n.has_tag_name("OJPExchangePointsDelivery"))
+            .ok_or("No exchange point delivery node found".to_string())?
+            .children()
+            .filter(|n| n.has_tag_name("Place"))
+            .collect::<Vec<Node>>();
+        match expts.len() {
+            0 => Err("No Exchange Points found".to_string())?,
+            _ => Ok(expts
+                .iter()
+                .map(|e| parse_epr(e))
+                .collect::<Result<Vec<ExchangePoint>, ErrorResponse>>()?),
+        }
+    }
+
+    pub fn get_trips(&self) -> Result<Vec<Trip>, ErrorResponse> {
+        let trips = self
+            .0
+            .descendants()
+            .find(|n| n.has_tag_name("OJPTripDelivery"))
+            .ok_or("No trip delivery node found".to_string())?
+            .children()
+            .filter(|n| n.has_tag_name("TripResult"))
+            .collect::<Vec<Node>>();
+        match trips.len() {
+            0 => Err("No Trips found".to_string())?,
+            _ => Ok(trips
+                .iter()
+                .map(|e| parse_trip(e))
+                .collect::<Result<Vec<Trip>, ErrorResponse>>()?),
+        }
     }
 }

@@ -7,13 +7,15 @@ mod parser;
 mod requests;
 mod types;
 
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use parser::*;
 use requests::{format_epr, format_lir};
 use reqwest::Client;
 use rocket::fs::{relative, FileServer};
-use rocket::futures::{stream, StreamExt};
+use rocket::futures::{stream, StreamExt, TryStreamExt};
+use rocket::http::ext::IntoCollection;
 use rocket::serde::json::Json;
 use rocket::State;
 use types::*;
@@ -27,7 +29,7 @@ fn echo(lir: Json<LocationInformationRequest>) -> Json<LocationInformationReques
     Json(lir.into_inner())
 }
 
-// example route showing how to receive and unpack json
+// get exchange points of a system
 #[get("/exchange?<system>")]
 fn exchange<'a>(
     system: &'a str,
@@ -52,40 +54,20 @@ async fn location(
     _lng: Option<&str>,
 ) -> Result<Json<Vec<Location>>, ErrorResponse> {
     let system = System::from_str(system)?.get_config();
-    // example reqwest
-    // TODO use parallel requests to query multiple systems
-    // TODO write a function for this stuff to keep routes clean
     let res = Client::new()
         .post(system.url)
         .bearer_auth(system.key)
         .header("Content-Type", "text/xml")
-        .body(format_lir(query, 10, false))
+        .body(format_lir(query, system.req_ref, 10, false))
         .send()
         .await
-        .map_err(|_| ErrorResponse::ReqwestError("OJP-Service can't be reached...".to_string()))?
+        .or(Err("OJP-Service can't be reached...".to_string()))?
         .text()
         .await
-        // with map_err we can map a reqwest error (which we can't control) to a custom error
-        .map_err(|_| {
-            ErrorResponse::ReqwestError("OJP-Service repsonse can't be read...".to_string())
-        })?;
-    let doc = roxmltree::Document::parse(&res).unwrap();
-    let nodes = doc
-        .descendants()
-        .find(|n| n.has_tag_name("OJPLocationInformationDelivery"))
-        .and_then(|f| {
-            Some(
-                f.children()
-                    .filter(|n| n.has_tag_name("Location"))
-                    .collect::<Vec<roxmltree::Node>>(),
-            )
-        })
-        .unwrap();
-    let locs = nodes
-        .iter()
-        .map(|n| parse_lir(&n))
-        .collect::<Result<Vec<Location>, ErrorResponse>>()?;
-    Ok(Json(locs))
+        .or(Err("OJP response not readable...".to_string()))?;
+    let doc = OjpDoc::new(&res)?;
+    let locations = doc.get_locations()?;
+    Ok(Json(locations))
 }
 
 // index, perfect place to mount a demo application (via FileServer like openapi)
@@ -108,9 +90,11 @@ async fn rocket() -> _ {
         slo: vec![],
     };
 
+    let mut exp: HashMap<System, Vec<ExchangePoint>> = HashMap::new();
+
     let client = Client::new();
 
-    //gather all the configs for there different systems 
+    //gather all the configs for there different systems
     let system_configs: Vec<SystemConfig> =
         System::get_all().iter().map(|s| s.get_config()).collect();
 

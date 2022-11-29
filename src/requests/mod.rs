@@ -1,12 +1,12 @@
 use chrono::{DateTime, SecondsFormat, Utc};
 use std::time::SystemTime;
 
-//Construct for the Location Information Request. The following Parameters are dynamic:
-//timestamp -> Typical timestamp telling the time of the request
-//query -> The Location which the Request is trying to get information from
-//nr_of_results -> Maximum Number of results to display
-//include_pt_modes -> ??
-pub fn format_lir(query: &str, nr_of_results: usize, include_pt_modes: bool) -> String {
+pub fn format_lir(
+    query: &str,
+    requestor_ref: &str,
+    nr_of_results: usize,
+    include_pt_modes: bool,
+) -> String {
     let timestamp =
         DateTime::<Utc>::from(SystemTime::now()).to_rfc3339_opts(SecondsFormat::Millis, true);
     format!(
@@ -15,7 +15,7 @@ pub fn format_lir(query: &str, nr_of_results: usize, include_pt_modes: bool) -> 
       <OJPRequest>
           <ServiceRequest>
               <RequestTimestamp>{timestamp}</RequestTimestamp>
-              <RequestorRef>OJP-META</RequestorRef>
+              <RequestorRef>{requestor_ref}</RequestorRef>
               <ojp:OJPLocationInformationRequest>
                   <RequestTimestamp>{timestamp}</RequestTimestamp>
                   <ojp:InitialInput>
@@ -32,7 +32,6 @@ pub fn format_lir(query: &str, nr_of_results: usize, include_pt_modes: bool) -> 
   </OJP>"#
     )
 }
-
 
 //Construct for the Location Information Request. The following Parameters are dynamic:
 //timestamp -> Typical timestamp telling the time of the request
