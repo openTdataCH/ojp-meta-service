@@ -117,8 +117,8 @@ fn test_adjacent() {
 #[test]
 fn test_shred_adjacency() {
     assert_eq!(
-        System::AT.shared_adjacency(System::IT),
-        vec![System::CH, System::SLO]
+        System::AT.shared_adjacency(System::IT).sort(),
+        vec![System::CH, System::SLO].sort()
     );
     assert_eq!(
         System::CH.shared_adjacency(System::SLO),
