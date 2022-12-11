@@ -134,8 +134,25 @@ impl System {
         }
         return shared_neighbors;
     }
+    pub fn ajdacent_paths(&self, dest: System) -> Vec<Adjacency> {
+        let indirect = &mut self
+            .adjacent()
+            .into_iter()
+            .filter(|s| dest.adjacent().contains(s))
+            .map(|s| Adjacency::Indirect(*self, s, dest))
+            .collect::<Vec<Adjacency>>();
+
+        match &self.adjacent().contains(&dest) {
+            true => {
+                indirect.push(Adjacency::Direct(*self, dest));
+                return indirect.to_vec();
+            }
+            false => indirect.to_vec(),
+        }
+    }
 }
 
+//Values belonging to the systems. Requestor reference, a key for authentication, an url and an ID.
 #[derive(Debug, PartialEq, Serialize)]
 pub struct SystemConfig {
     pub req_ref: &'static str,
