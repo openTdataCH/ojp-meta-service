@@ -61,15 +61,6 @@ pub enum System {
     SLO,
 }
 
-//Values belonging to the systems. Requestor reference, a key for authentication, an url and an ID.
-#[derive(Debug, PartialEq, Serialize)]
-pub struct SystemConfig {
-    pub req_ref: &'static str,
-    pub key: &'static str,
-    pub url: &'static str,
-    pub id: System,
-}
-
 //map easy identifiers to the different available systems. Error is received when the system doesn't exist.
 impl FromStr for System {
     type Err = ErrorResponse;
@@ -145,6 +136,13 @@ impl System {
     }
 }
 
+#[derive(Debug, PartialEq, Serialize)]
+pub struct SystemConfig {
+    pub req_ref: &'static str,
+    pub key: &'static str,
+    pub url: &'static str,
+    pub id: System,
+}
 // ------------ State -------------//
 
 //Struct where all the Exchange Points are being cached for faster access time.
