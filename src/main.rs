@@ -118,8 +118,6 @@ async fn rocket() -> _ {
             .collect(),
     );
 
-    println!("{:?}", exp_pts.0.values().map(|x| x.len()));
-
     //build the app
     rocket::build()
         .mount("/", routes![index, location, system, echo, exchange])
