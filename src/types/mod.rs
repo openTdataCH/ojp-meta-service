@@ -110,7 +110,7 @@ impl System {
     }
 
     pub const fn get_all() -> [System; 4] {
-        [System::CH, System::AT, System::IT, System::SLO ]
+        [System::CH, System::AT, System::IT, System::SLO]
     }
 
     // returns neighboring countries for a given system
@@ -134,6 +134,7 @@ impl System {
         }
         return shared_neighbors;
     }
+
     pub fn ajdacent_paths(&self, dest: System) -> Vec<Adjacency> {
         let indirect = &mut self
             .adjacent()
