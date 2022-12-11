@@ -1,4 +1,4 @@
-use std::{num::ParseFloatError, str::FromStr};
+use std::{num::ParseFloatError, str::FromStr, vec};
 
 use dotenvy_macro::dotenv;
 use rocket::serde::json::Json;
@@ -120,6 +120,28 @@ impl System {
 
     pub const fn get_all() -> [System; 4] {
         [System::CH, System::AT, System::IT, System::SLO ]
+    }
+
+    // returns neighboring countries for a given system
+    pub fn adjacent(&self) -> Vec<System> {
+        match self {
+            System::CH => vec![System::AT, System::IT],
+            System::AT => vec![System::CH, System::IT],
+            System::IT => vec![System::AT, System::CH],
+            System::SLO => vec![System::AT, System::IT],
+        }
+    }
+    // returns an array of matching neighboring countries for two systems
+    pub fn shared_adjacency(&self, dest: System) -> Vec<System> {
+        let mut shared_neighbors: Vec<System> = Vec::new();
+        let origin: Vec<System> = self.adjacent();
+        let dest: Vec<System> = dest.adjacent();
+        for elem in origin {
+            if dest.contains(&elem) {
+                shared_neighbors.push(elem)
+            }
+        }
+        return shared_neighbors;
     }
 }
 
