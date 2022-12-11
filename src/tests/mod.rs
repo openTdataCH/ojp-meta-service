@@ -125,3 +125,24 @@ fn test_shred_adjacency() {
         vec![System::AT, System::IT]
     );
 }
+
+#[test]
+fn test_adjacent_paths() {
+    assert_eq!(
+        System::AT.ajdacent_paths(System::IT).sort(),
+        vec![
+            Adjacency::Indirect(System::AT, System::CH, System::IT),
+            Adjacency::Indirect(System::AT, System::SLO, System::IT),
+            Adjacency::Direct(System::AT, System::IT),
+        ]
+        .sort()
+    );
+    assert_eq!(
+        System::CH.ajdacent_paths(System::SLO).sort(),
+        vec![
+            Adjacency::Indirect(System::CH, System::AT, System::SLO),
+            Adjacency::Indirect(System::CH, System::IT, System::SLO),
+        ]
+        .sort()
+    );
+}
