@@ -178,7 +178,18 @@ pub struct Trip {
 }
 
 // not clear what this is, a trip seems to only ever have on leg what's the point of that
-pub struct TripLeg {}
+pub enum TripLeg {
+    TimedLeg(TimedLeg),
+    TransferLeg(TransferLeg),
+}
+
+pub struct TimedLeg {
+    id: String,
+}
+
+pub struct TransferLeg {
+    id: String,
+}
 
 pub struct ExchangePointRequest {
     system: System,
