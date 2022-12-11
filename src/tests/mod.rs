@@ -104,3 +104,45 @@ fn test_epr_parsing_ok() {
         )
     );
 }
+
+#[test]
+fn test_adjacent() {
+    assert_eq!(
+        System::AT.adjacent(),
+        vec![System::CH, System::IT, System::SLO]
+    );
+    assert_eq!(System::SLO.adjacent(), vec![System::AT, System::IT]);
+}
+
+#[test]
+fn test_shred_adjacency() {
+    assert_eq!(
+        System::AT.shared_adjacency(System::IT).sort(),
+        vec![System::CH, System::SLO].sort()
+    );
+    assert_eq!(
+        System::CH.shared_adjacency(System::SLO),
+        vec![System::AT, System::IT]
+    );
+}
+
+#[test]
+fn test_adjacent_paths() {
+    assert_eq!(
+        System::AT.ajdacent_paths(System::IT).sort(),
+        vec![
+            Adjacency::Indirect(System::AT, System::CH, System::IT),
+            Adjacency::Indirect(System::AT, System::SLO, System::IT),
+            Adjacency::Direct(System::AT, System::IT),
+        ]
+        .sort()
+    );
+    assert_eq!(
+        System::CH.ajdacent_paths(System::SLO).sort(),
+        vec![
+            Adjacency::Indirect(System::CH, System::AT, System::SLO),
+            Adjacency::Indirect(System::CH, System::IT, System::SLO),
+        ]
+        .sort()
+    );
+}
