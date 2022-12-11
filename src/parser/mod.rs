@@ -1,6 +1,8 @@
 use roxmltree::{Document, Node};
 
-use crate::types::{Coordinates, ErrorResponse, OjpDoc, OjpNode, Trip};
+use crate::types::{
+    Coordinates, ErrorResponse, OjpDoc, OjpNode, TimedLeg, TransferLeg, Trip, TripLeg,
+};
 
 use super::types::{ExchangePoint, Location};
 
@@ -51,4 +53,16 @@ pub fn parse_epr(exchange_point: &Node) -> Result<ExchangePoint, ErrorResponse> 
 //     })
 // }
 
-// fn parse_leg(leg: &Node) ->
+// fn parse_leg(leg: &Node) -> TripLeg
+
+fn parse_timed_leg(leg: &Node) -> TimedLeg {
+    TimedLeg {
+        id: "ok".to_string(),
+    }
+}
+
+fn parse_transfer_leg(leg: &Node) -> TransferLeg {
+    TransferLeg {
+        id: "ok".to_string(),
+    }
+}
