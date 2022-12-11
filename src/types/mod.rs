@@ -53,7 +53,7 @@ impl From<String> for ErrorResponse {
 // ------------- SYSTEM --------------- //
 
 //The Different Systems available.
-#[derive(Debug, PartialEq, Serialize, Clone, Copy)]
+#[derive(Debug, PartialEq, Serialize, Clone, Copy, PartialOrd, Eq, Ord)]
 pub enum System {
     CH,
     AT,
@@ -162,7 +162,7 @@ pub struct SystemConfig {
     pub id: System,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Adjacency {
     Direct(System, System),
     Indirect(System, System, System),
