@@ -105,15 +105,23 @@ fn test_epr_parsing_ok() {
     );
 }
 
-
 #[test]
 fn test_adjacent() {
-  assert_eq!(System::AT.adjacent(), vec![System::CH, System::IT, System::SLO]);
-  assert_eq!(System::SLO.adjacent(), vec![System::AT, System::IT]);
+    assert_eq!(
+        System::AT.adjacent(),
+        vec![System::CH, System::IT, System::SLO]
+    );
+    assert_eq!(System::SLO.adjacent(), vec![System::AT, System::IT]);
 }
 
 #[test]
 fn test_shred_adjacency() {
-  assert_eq!(System::AT.shared_adjacency(System::IT), vec![System::CH, System::SLO]);
-  assert_eq!(System::CH.shared_adjacency(System::SLO), vec![System::AT, System::IT]);
+    assert_eq!(
+        System::AT.shared_adjacency(System::IT),
+        vec![System::CH, System::SLO]
+    );
+    assert_eq!(
+        System::CH.shared_adjacency(System::SLO),
+        vec![System::AT, System::IT]
+    );
 }
