@@ -53,7 +53,7 @@ impl From<String> for ErrorResponse {
 // ------------- SYSTEM --------------- //
 
 //The Different Systems available.
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Clone, Copy)]
 pub enum System {
     CH,
     AT,
