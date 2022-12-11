@@ -143,6 +143,12 @@ pub struct SystemConfig {
     pub url: &'static str,
     pub id: System,
 }
+
+#[derive(Clone)]
+pub enum Adjacency {
+    Direct(System, System),
+    Indirect(System, System, System),
+}
 // ------------ State -------------//
 
 //Struct where all the Exchange Points are being cached for faster access time.
