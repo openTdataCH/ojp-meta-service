@@ -126,8 +126,8 @@ impl System {
     pub fn adjacent(&self) -> Vec<System> {
         match self {
             System::CH => vec![System::AT, System::IT],
-            System::AT => vec![System::CH, System::IT],
-            System::IT => vec![System::AT, System::CH],
+            System::AT => vec![System::CH, System::IT, System::SLO],
+            System::IT => vec![System::AT, System::CH, System::SLO],
             System::SLO => vec![System::AT, System::IT],
         }
     }
