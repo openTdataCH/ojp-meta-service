@@ -1,4 +1,8 @@
-use std::{collections::HashMap, num::ParseFloatError, str::FromStr};
+use std::{
+    collections::HashMap,
+    num::{ParseFloatError, ParseIntError},
+    str::FromStr,
+};
 
 use chrono::{DateTime, NaiveDateTime};
 use dotenvy_macro::dotenv;
@@ -6,7 +10,7 @@ use rocket::serde::json::Json;
 use roxmltree::{Document, Node};
 use serde::{Deserialize, Serialize};
 
-use crate::parser::{parse_epr, parse_lir};
+use crate::parser::{parse_epr, parse_lir, parse_trip};
 
 // ------------- ERRORS --------------- //
 
@@ -37,6 +41,12 @@ pub struct ErrorMessage {
 
 impl From<ParseFloatError> for ErrorResponse {
     fn from(source: ParseFloatError) -> Self {
+        Self::ParseError(source.to_string())
+    }
+}
+
+impl From<ParseIntError> for ErrorResponse {
+    fn from(source: ParseIntError) -> Self {
         Self::ParseError(source.to_string())
     }
 }
@@ -168,27 +178,66 @@ pub struct TripRequest {
     intermediate_stops: bool,
 }
 
+#[derive(Debug)]
 pub struct Trip {
-    id: String,
-    duration: String,
-    start_time: String,
-    end_time: String,
-    transfers: String,
-    legs: Vec<TripLeg>,
+    pub id: String,
+    pub duration: String,
+    pub start_time: String,
+    pub end_time: String,
+    pub transfers: String,
+    pub legs: Vec<TripLeg>,
 }
 
-// not clear what this is, a trip seems to only ever have on leg what's the point of that
+#[derive(Debug)]
 pub enum TripLeg {
-    TimedLeg(TimedLeg),
+    // this might need a more complex type that captures metadata, but it's ok for now
+    TimedLeg(Vec<TimedLeg>),
     TransferLeg(TransferLeg),
 }
 
-pub struct TimedLeg {
-    id: String,
+#[derive(Debug)]
+pub enum TimedLegType {
+    Board,
+    Intermediate,
+    Alight,
 }
 
+impl FromStr for TimedLegType {
+    type Err = ErrorResponse;
+
+    fn from_str(input: &str) -> Result<TimedLegType, Self::Err> {
+        match input {
+            "LegBoard" => Ok(TimedLegType::Board),
+            "LegIntermediates" => Ok(TimedLegType::Intermediate),
+            "LegAlight" => Ok(TimedLegType::Alight),
+
+            x => Err(ErrorResponse::ParseError(format!(
+                "leg type with identifier {x} not found"
+            ))),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TimedLeg {
+    pub stop_point_ref: String,
+    pub stop_point_name: String,
+    pub planned_quay: Option<String>,
+    pub departure_time: String,
+    pub order: u32,
+    pub kind: TimedLegType,
+}
+
+#[derive(Debug)]
 pub struct TransferLeg {
-    id: String,
+    pub mode: String,
+    pub start_point_ref: String,
+    pub start_location_name: String,
+    pub stop_point_ref: String,
+    pub stop_location_name: String,
+    pub start_time: String,
+    pub duration: String,
+    pub walk_duration: String,
 }
 
 pub struct ExchangePointRequest {
@@ -218,6 +267,7 @@ pub struct GeoRestriction {
 }
 
 // wrapper struct around roxmltree::Node so we can impl some methods
+#[derive(Debug)]
 pub struct OjpNode<'a>(pub &'a Node<'a, 'a>);
 
 impl OjpNode<'_> {
@@ -238,6 +288,20 @@ impl OjpNode<'_> {
 
     pub fn text_tag_of(&self, name: &str) -> Result<String, ErrorResponse> {
         Ok(OjpNode(&OjpNode(&self.tag_name(name)?).0).text_of("Text")?)
+    }
+
+    pub fn contains(&self, name: &str) -> bool {
+        match &self.0.descendants().find(|n| n.has_tag_name(name)) {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
+    pub fn contains_which<'a>(&'a self, names: Vec<&'a str>) -> Option<(&Self, &str)> {
+        match names.iter().find(|name| self.contains(name)) {
+            Some(f) => Some((self, *f)),
+            None => None,
+        }
     }
 }
 
@@ -285,21 +349,18 @@ impl<'a> OjpDoc<'a> {
         }
     }
 
-    // pub fn get_trips(&self) -> Result<Vec<Trip>, ErrorResponse> {
-    //     let trips = self
-    //         .0
-    //         .descendants()
-    //         .find(|n| n.has_tag_name("OJPTripDelivery"))
-    //         .ok_or("No trip delivery node found".to_string())?
-    //         .children()
-    //         .filter(|n| n.has_tag_name("TripResult"))
-    //         .collect::<Vec<Node>>();
-    //     match trips.len() {
-    //         0 => Err("No Trips found".to_string())?,
-    //         _ => Ok(trips
-    //             .iter()
-    //             .map(|e| parse_trip(e))
-    //             .collect::<Result<Vec<Trip>, ErrorResponse>>()?),
-    //     }
-    // }
+    pub fn get_trips(&self) -> Result<Vec<Trip>, ErrorResponse> {
+        let trips = self
+            .0
+            .descendants()
+            .filter(|n| n.has_tag_name("TripResult"))
+            .collect::<Vec<Node>>();
+        match trips.len() {
+            0 => Err("No Trips found".to_string())?,
+            _ => Ok(trips
+                .iter()
+                .map(|t| parse_trip(t))
+                .collect::<Result<Vec<Trip>, ErrorResponse>>()?),
+        }
+    }
 }
