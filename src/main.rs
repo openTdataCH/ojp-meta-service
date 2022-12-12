@@ -82,8 +82,10 @@ async fn rocket() -> _ {
     let client = Client::new();
 
     //gather all the configs for there different systems
+    //call system get_exp_systems() to get all the systems and filter system::Fern
+
     let system_configs: Vec<SystemConfig> =
-        System::get_all().iter().map(|s| s.get_config()).collect();
+        System::get_exp_systems().iter().map(|s| s.get_config()).collect();
 
     let exchange_points = stream::iter(system_configs)
         .map(|system| {

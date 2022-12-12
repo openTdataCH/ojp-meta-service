@@ -71,6 +71,7 @@ pub enum System {
     AT,
     IT,
     SLO,
+    FERN,
 }
 
 //Values belonging to the systems. Requestor reference, a key for authentication, an url and an ID.
@@ -92,6 +93,7 @@ impl FromStr for System {
             "at" => Ok(System::AT),
             "it" => Ok(System::IT),
             "slo" => Ok(System::SLO),
+            "fern" => Ok(System::FERN),
             x => Err(ErrorResponse::SystemNotFoundError(format!(
                 "system with identifier {x} not found"
             ))),
@@ -127,10 +129,16 @@ impl System {
                 url: dotenv!("SLO_URL"),
                 id: System::SLO,
             },
+            System::FERN => SystemConfig {
+                req_ref: dotenv!("FERN_REQ_REF"),
+                key: dotenv!("FERN_KEY"),
+                url: dotenv!("FERN_URL"),
+                id: System::FERN,
+            }
         }
     }
 
-    pub const fn get_all() -> [System; 4] {
+    pub const fn get_exp_systems() -> [System; 4] {
         [System::CH, System::AT, System::IT, System::SLO]
     }
 }
