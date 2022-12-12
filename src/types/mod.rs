@@ -128,7 +128,7 @@ impl System {
         }
     }
 
-    pub const fn get_all() -> [System; 4] {
+    pub const fn get_exp_systems() -> [System; 4] {
         [System::CH, System::AT, System::IT, System::SLO]
     }
 }
