@@ -58,3 +58,50 @@ pub fn format_epr(requestor_ref: &str) -> String {
     </OJP>"#
     )
 }
+
+pub fn format_trip(
+    origin_ref: &str,
+    origin_name: &str,
+    destination_ref: &str,
+    destination_name: &str,
+    requestor_ref: &str,
+) -> String {
+    let timestamp =
+        DateTime::<Utc>::from(SystemTime::now()).to_rfc3339_opts(SecondsFormat::Millis, true);
+    format!(
+        r#"<?xml version="1.0" encoding="utf-8"?>
+        <OJP xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.siri.org.uk/siri" version="1.0" xmlns:ojp="http://www.vdv.de/ojp" xsi:schemaLocation="http://www.siri.org.uk/siri ../ojp-xsd-v1.0/OJP.xsd">
+          <OJPRequest>
+            <ServiceRequest>
+              <RequestTimestamp>{timestamp}</RequestTimestamp>
+              <RequestorRef>{requestor_ref}</RequestorRef>
+              <ojp:OJPTripRequest>
+                <RequestTimestamp>{timestamp}</RequestTimestamp>
+                <ojp:Origin>
+                  <ojp:PlaceRef>
+                    <ojp:StopPlaceRef>{origin_ref}</ojp:StopPlaceRef>
+                    <ojp:LocationName>
+                      <ojp:Text>{origin_name}</ojp:Text>
+                    </ojp:LocationName>
+                  </ojp:PlaceRef>
+                  <ojp:DepArrTime>{timestamp}</ojp:DepArrTime>
+                </ojp:Origin>
+                <ojp:Destination>
+                  <ojp:PlaceRef>
+                    <ojp:StopPlaceRef>{destination_ref}</ojp:StopPlaceRef>
+                    <ojp:LocationName>
+                      <ojp:Text>{destination_name}</ojp:Text>
+                    </ojp:LocationName>
+                  </ojp:PlaceRef>
+                </ojp:Destination>
+                <ojp:Params>
+                  <ojp:IncludeTrackSections></ojp:IncludeTrackSections>
+                  <ojp:IncludeTurnDescription></ojp:IncludeTurnDescription>
+                  <ojp:IncludeIntermediateStops>true</ojp:IncludeIntermediateStops>
+                </ojp:Params>
+              </ojp:OJPTripRequest>
+            </ServiceRequest>
+          </OJPRequest>
+        </OJP>"#
+    )
+}

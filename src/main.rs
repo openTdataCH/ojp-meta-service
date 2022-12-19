@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use parser::*;
-use requests::{format_epr, format_lir};
+use requests::{format_epr, format_lir, format_trip};
 use reqwest::Client;
 use rocket::fs::{relative, FileServer};
 use rocket::futures::{stream, StreamExt, TryStreamExt};
@@ -70,6 +70,30 @@ async fn location(
     Ok(Json(locations))
 }
 
+#[get("/trip")]
+async fn trip() -> Result<Json<Vec<Trip>>, ErrorResponse> {
+    let system = System::from_str("ch")?.get_config();
+    let res = Client::new()
+        .post(system.url)
+        .bearer_auth(system.key)
+        .header("Content-Type", "text/xml")
+        .body(format_trip(
+            "8507000",
+            "Bern",
+            "8507380",
+            "Grindelwald (Grindelwald)",
+            "API-Explorer",
+        ))
+        .send()
+        .await
+        .or(Err("OJP-Service can't be reached...".to_string()))?
+        .text()
+        .await
+        .or(Err("OJP response not readable...".to_string()))?;
+    let doc = OjpDoc::new(&res)?;
+    let trips = doc.get_trips()?;
+    Ok(Json(trips))
+}
 // index, perfect place to mount a demo application (via FileServer like openapi)
 #[get("/")]
 fn index() -> &'static str {
@@ -84,8 +108,10 @@ async fn rocket() -> _ {
     //gather all the configs for there different systems
     //call system get_exp_systems() to get all the systems and filter system::Fern
 
-    let system_configs: Vec<SystemConfig> =
-        System::get_exp_systems().iter().map(|s| s.get_config()).collect();
+    let system_configs: Vec<SystemConfig> = System::get_exp_systems()
+        .iter()
+        .map(|s| s.get_config())
+        .collect();
 
     let exchange_points = stream::iter(system_configs)
         .map(|system| {
@@ -122,7 +148,7 @@ async fn rocket() -> _ {
 
     //build the app
     rocket::build()
-        .mount("/", routes![index, location, system, echo, exchange])
+        .mount("/", routes![index, location, system, echo, exchange, trip])
         .mount("/docs", FileServer::from(relative!("/docs")))
         .manage(exp_pts)
 }

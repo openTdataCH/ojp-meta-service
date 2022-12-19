@@ -134,7 +134,7 @@ impl System {
                 key: dotenv!("FERN_KEY"),
                 url: dotenv!("FERN_URL"),
                 id: System::FERN,
-            }
+            },
         }
     }
 
@@ -186,7 +186,7 @@ pub struct TripRequest {
     intermediate_stops: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Trip {
     pub id: String,
     pub duration: String,
@@ -196,14 +196,14 @@ pub struct Trip {
     pub legs: Vec<TripLeg>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum TripLeg {
     // this might need a more complex type that captures metadata, but it's ok for now
     TimedLeg(Vec<TimedLeg>),
     TransferLeg(TransferLeg),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum TimedLegType {
     Board,
     Intermediate,
@@ -226,7 +226,7 @@ impl FromStr for TimedLegType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct TimedLeg {
     pub stop_point_ref: String,
     pub stop_point_name: String,
@@ -236,7 +236,7 @@ pub struct TimedLeg {
     pub kind: TimedLegType,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct TransferLeg {
     pub mode: String,
     pub start_point_ref: String,
