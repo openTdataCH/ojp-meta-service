@@ -195,6 +195,8 @@ pub struct ExchangePointResponse {
     pub xml: String,
 }
 
+
+
 // location information request
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct LocationInformationRequest {
@@ -215,6 +217,11 @@ pub struct Location {
     pub stop_place_name: String,
     pub location_name: String,
     pub coordinates: Coordinates,
+}
+
+pub struct MultiLIRResponse {
+    pub id: System,
+    pub xml: Location,
 }
 
 // trip request
