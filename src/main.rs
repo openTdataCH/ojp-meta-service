@@ -89,10 +89,8 @@ async fn location(
 }
 
 //Get one location from every query
-#[get("/location/<query>")]
-async fn multiLocation(
-    query: &str,
-) -> Result<Json<Vec<MultiLIRResponse>, ErrorResponse>> {
+#[get("/multilocation/<query>")]
+async fn multilocation(query: &str) -> Result<Json<Vec<Location>>, ErrorResponse> {
     let nr_of_reqs: usize = 1;
     let client = Client::new();
 
@@ -100,32 +98,35 @@ async fn multiLocation(
     let system_configs: Vec<SystemConfig> =
         System::get_all().iter().map(|s| s.get_config()).collect();
 
-    let bodies = stream::iter(system_configs)
-    .map(|system| {
+    let bodies = stream::iter(system_configs).map(|system| {
         let client = &client;
         async move {
             let resp = client
                 .post(system.url)
                 .bearer_auth(system.key)
                 .header("Content-Type", "text/xml")
-                .body(format_lir(query), 10, false)
+                .body(format_lir(query, nr_of_reqs, true))
                 .send()
                 .await
-                .map_err(|_| ErrorResponse::ReqwestError("OJP-Service can't be reached...".to_string()))?
+                .map_err(|_| {
+                    ErrorResponse::ReqwestError("OJP-Service can't be reached...".to_string())
+                })?
                 .text()
                 .await
                 // with map_err we can map a reqwest error (which we can't control) to a custom error
                 .map_err(|_| {
                     ErrorResponse::ReqwestError("OJP-Service response can't be read...".to_string())
-                 })?;
-                    
-                let loc_xml = resp.text().await?;
+                })?;
+
+            let loc_xml = resp.text().await?;
             println!("{:?}", system.id);
-            let result: Result<MultiLIRResponse, reqwest::Error> =
-                Ok(MultiLIRResponse { id: system.id, loc_xml });
+            let result: Result<MultiLIRResponse, reqwest::Error> = Ok(MultiLIRResponse {
+                id: system.id,
+                loc_xml,
+            });
             result
         }
-    })?;
+    });
     let doc = roxmltree::Document::parse(&bodies).unwrap();
     let nodes = doc
         .descendants()
@@ -145,13 +146,11 @@ async fn multiLocation(
     Ok(Json(locs))
 }
 
-
 // index, perfect place to mount a demo application (via FileServer like openapi)
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
 }
-
 
 //Entry Point of the application. Everything gets started here.
 #[launch]
