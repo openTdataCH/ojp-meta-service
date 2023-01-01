@@ -3,6 +3,7 @@ use std::{
     num::{ParseFloatError, ParseIntError},
     str::FromStr,
 };
+use std::{num::ParseFloatError, str::FromStr, vec};
 
 use chrono::{DateTime, NaiveDateTime};
 use dotenvy_macro::dotenv;
@@ -65,22 +66,14 @@ impl From<String> for ErrorResponse {
 
 // ------------- SYSTEM --------------- //
 
-#[derive(Debug, PartialEq, Serialize, Eq, Hash, Clone, Copy)]
+//The Different Systems available.
+#[derive(Debug, PartialEq, Serialize, Clone, Copy, Hash, PartialOrd, Eq, Ord)]
 pub enum System {
     CH,
     AT,
     IT,
     SLO,
     FERN,
-}
-
-//Values belonging to the systems. Requestor reference, a key for authentication, an url and an ID.
-#[derive(Debug, PartialEq, Serialize)]
-pub struct SystemConfig {
-    pub req_ref: &'static str,
-    pub key: &'static str,
-    pub url: &'static str,
-    pub id: System,
 }
 
 //map easy identifiers to the different available systems. Error is received when the system doesn't exist.
@@ -141,8 +134,61 @@ impl System {
     pub const fn get_exp_systems() -> [System; 4] {
         [System::CH, System::AT, System::IT, System::SLO]
     }
+
+    // returns neighboring countries for a given system
+    pub fn adjacent(&self) -> Vec<System> {
+        match self {
+            System::CH => vec![System::AT, System::IT],
+            System::AT => vec![System::CH, System::IT, System::SLO],
+            System::IT => vec![System::AT, System::CH, System::SLO],
+            System::SLO => vec![System::AT, System::IT],
+        }
+    }
+    // returns an array of matching neighboring countries for two systems
+    pub fn shared_adjacency(&self, dest: System) -> Vec<System> {
+        let mut shared_neighbors: Vec<System> = Vec::new();
+        let origin: Vec<System> = self.adjacent();
+        let dest: Vec<System> = dest.adjacent();
+        for elem in origin {
+            if dest.contains(&elem) {
+                shared_neighbors.push(elem)
+            }
+        }
+        return shared_neighbors;
+    }
+
+    pub fn ajdacent_paths(&self, dest: System) -> Vec<Adjacency> {
+        let indirect = &mut self
+            .adjacent()
+            .into_iter()
+            .filter(|s| dest.adjacent().contains(s))
+            .map(|s| Adjacency::Indirect(*self, s, dest))
+            .collect::<Vec<Adjacency>>();
+
+        match &self.adjacent().contains(&dest) {
+            true => {
+                indirect.push(Adjacency::Direct(*self, dest));
+                return indirect.to_vec();
+            }
+            false => indirect.to_vec(),
+        }
+    }
 }
 
+//Values belonging to the systems. Requestor reference, a key for authentication, an url and an ID.
+#[derive(Debug, PartialEq, Serialize)]
+pub struct SystemConfig {
+    pub req_ref: &'static str,
+    pub key: &'static str,
+    pub url: &'static str,
+    pub id: System,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Adjacency {
+    Direct(System, System),
+    Indirect(System, System, System),
+}
 // ------------ State -------------//
 
 //Struct where all the Exchange Points are being cached for faster access time.
