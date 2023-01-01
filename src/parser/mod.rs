@@ -35,8 +35,7 @@ pub fn parse_epr(exchange_point: &Node) -> Result<ExchangePoint, ErrorResponse> 
             lng: ojp_node.text_of("Longitude")?.parse::<f64>()?,
             lat: ojp_node.text_of("Latitude")?.parse::<f64>()?,
         },
-        // pt_mode: ojp_node.text_of("PtMode")?,
-        pt_mode: "lol".to_string(),
+        pt_mode: ojp_node.text_of("PtMode").ok(),
     })
 }
 
@@ -117,7 +116,7 @@ fn parse_transfer_leg(leg: &OjpNode) -> Result<TripLeg, ErrorResponse> {
         stop_location_name: end.text_tag_of("LocationName")?,
         start_time: leg.text_of("TimeWindowStart")?,
         duration: leg.text_of("Duration")?,
-        walk_duration: leg.text_of("WalkDuration")?,
+        walk_duration: leg.text_of("WalkDuration").ok(),
     }))
 }
 

@@ -245,7 +245,7 @@ pub struct TransferLeg {
     pub stop_location_name: String,
     pub start_time: String,
     pub duration: String,
-    pub walk_duration: String,
+    pub walk_duration: Option<String>,
 }
 
 pub struct ExchangePointRequest {
@@ -259,7 +259,7 @@ pub struct ExchangePoint {
     pub place_ref: String,
     pub location_name: String,
     pub coordinates: Coordinates,
-    pub pt_mode: String,
+    pub pt_mode: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
