@@ -1,9 +1,17 @@
-use std::{num::ParseFloatError, str::FromStr, vec};
+use std::{
+    collections::HashMap,
+    num::{ParseFloatError, ParseIntError},
+    str::FromStr,
+    vec,
+};
 
+use chrono::{DateTime, NaiveDateTime};
 use dotenvy_macro::dotenv;
 use rocket::serde::json::Json;
-use roxmltree::Node;
+use roxmltree::{Document, Node};
 use serde::{Deserialize, Serialize};
+
+use crate::parser::{parse_epr, parse_lir, parse_trip};
 
 // ------------- ERRORS --------------- //
 
@@ -38,6 +46,12 @@ impl From<ParseFloatError> for ErrorResponse {
     }
 }
 
+impl From<ParseIntError> for ErrorResponse {
+    fn from(source: ParseIntError) -> Self {
+        Self::ParseError(source.to_string())
+    }
+}
+
 impl From<roxmltree::Error> for ErrorResponse {
     fn from(source: roxmltree::Error) -> Self {
         Self::ParseError(source.to_string())
@@ -53,12 +67,13 @@ impl From<String> for ErrorResponse {
 // ------------- SYSTEM --------------- //
 
 //The Different Systems available.
-#[derive(Debug, PartialEq, Serialize, Clone, Copy, PartialOrd, Eq, Ord)]
+#[derive(Debug, PartialEq, Serialize, Clone, Copy, Hash, PartialOrd, Eq, Ord)]
 pub enum System {
     CH,
     AT,
     IT,
     SLO,
+    FERN,
 }
 
 //map easy identifiers to the different available systems. Error is received when the system doesn't exist.
@@ -71,6 +86,7 @@ impl FromStr for System {
             "at" => Ok(System::AT),
             "it" => Ok(System::IT),
             "slo" => Ok(System::SLO),
+            "fern" => Ok(System::FERN),
             x => Err(ErrorResponse::SystemNotFoundError(format!(
                 "system with identifier {x} not found"
             ))),
@@ -106,10 +122,16 @@ impl System {
                 url: dotenv!("SLO_URL"),
                 id: System::SLO,
             },
+            System::FERN => SystemConfig {
+                req_ref: dotenv!("FERN_REQ_REF"),
+                key: dotenv!("FERN_KEY"),
+                url: dotenv!("FERN_URL"),
+                id: System::FERN,
+            },
         }
     }
 
-    pub const fn get_all() -> [System; 4] {
+    pub const fn get_exp_systems() -> [System; 4] {
         [System::CH, System::AT, System::IT, System::SLO]
     }
 
@@ -120,6 +142,7 @@ impl System {
             System::AT => vec![System::CH, System::IT, System::SLO],
             System::IT => vec![System::AT, System::CH, System::SLO],
             System::SLO => vec![System::AT, System::IT],
+            System::FERN => System::get_exp_systems().to_vec(),
         }
     }
     // returns an array of matching neighboring countries for two systems
@@ -170,24 +193,8 @@ pub enum Adjacency {
 // ------------ State -------------//
 
 //Struct where all the Exchange Points are being cached for faster access time.
-pub struct ExchangePointState {
-    pub ch: Vec<ExchangePoint>,
-    pub at: Vec<ExchangePoint>,
-    pub it: Vec<ExchangePoint>,
-    pub slo: Vec<ExchangePoint>,
-}
-
-//The Cached Exchanged points all belong to their respective system and therefore have to be mapped
-impl ExchangePointState {
-    pub fn from_system(&self, sys: System) -> &Vec<ExchangePoint> {
-        match sys {
-            System::CH => &self.ch,
-            System::AT => &self.at,
-            System::IT => &self.it,
-            System::SLO => &self.slo,
-        }
-    }
-}
+#[derive(Debug)]
+pub struct ExchangePointState(pub HashMap<System, Vec<ExchangePoint>>);
 
 //Response. Id is needed to identify the system and xml is the result of an EPR.
 pub struct ExchangePointResponse {
@@ -219,29 +226,74 @@ pub struct Location {
 
 // trip request
 pub struct TripRequest {
-    origin: PlaceRef,
-    destination: PlaceRef,
+    origin: String,
+    destination: String,
     // maybe we need to use chrono::DateTime for this, depends on what we need to do
     dep_arr_time: String,
     intermediate_stops: bool,
 }
 
-pub struct TripResult {
-    id: String,
-    trip: Trip,
-}
-
+#[derive(Debug, Serialize)]
 pub struct Trip {
-    id: String,
-    duration: String,
-    start_time: String,
-    end_time: String,
-    transfers: usize,
-    legs: [TripLeg],
+    pub id: String,
+    pub duration: String,
+    pub start_time: String,
+    pub end_time: String,
+    pub transfers: String,
+    pub legs: Vec<TripLeg>,
 }
 
-// not clear what this is, a trip seems to only ever have on leg what's the point of that
-pub struct TripLeg {}
+#[derive(Debug, Serialize)]
+pub enum TripLeg {
+    // this might need a more complex type that captures metadata, but it's ok for now
+    TimedLeg(Vec<TimedLeg>),
+    TransferLeg(TransferLeg),
+}
+
+#[derive(Debug, Serialize)]
+pub enum TimedLegType {
+    Board,
+    Intermediate,
+    Alight,
+}
+
+impl FromStr for TimedLegType {
+    type Err = ErrorResponse;
+
+    fn from_str(input: &str) -> Result<TimedLegType, Self::Err> {
+        match input {
+            "LegBoard" => Ok(TimedLegType::Board),
+            "LegIntermediates" => Ok(TimedLegType::Intermediate),
+            "LegAlight" => Ok(TimedLegType::Alight),
+
+            x => Err(ErrorResponse::ParseError(format!(
+                "leg type with identifier {x} not found"
+            ))),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct TimedLeg {
+    pub stop_point_ref: String,
+    pub stop_point_name: String,
+    pub planned_quay: Option<String>,
+    pub departure_time: String,
+    pub order: u32,
+    pub kind: TimedLegType,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TransferLeg {
+    pub mode: String,
+    pub start_point_ref: String,
+    pub start_location_name: String,
+    pub stop_point_ref: String,
+    pub stop_location_name: String,
+    pub start_time: String,
+    pub duration: String,
+    pub walk_duration: Option<String>,
+}
 
 pub struct ExchangePointRequest {
     system: System,
@@ -254,7 +306,7 @@ pub struct ExchangePoint {
     pub place_ref: String,
     pub location_name: String,
     pub coordinates: Coordinates,
-    pub pt_mode: String,
+    pub pt_mode: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -269,12 +321,8 @@ pub struct GeoRestriction {
     lower_right: Coordinates,
 }
 
-struct PlaceRef {
-    stop_place_ref: String,
-    name: String,
-}
-
 // wrapper struct around roxmltree::Node so we can impl some methods
+#[derive(Debug)]
 pub struct OjpNode<'a>(pub &'a Node<'a, 'a>);
 
 impl OjpNode<'_> {
@@ -295,5 +343,79 @@ impl OjpNode<'_> {
 
     pub fn text_tag_of(&self, name: &str) -> Result<String, ErrorResponse> {
         Ok(OjpNode(&OjpNode(&self.tag_name(name)?).0).text_of("Text")?)
+    }
+
+    pub fn contains(&self, name: &str) -> bool {
+        match &self.0.descendants().find(|n| n.has_tag_name(name)) {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
+    pub fn contains_which<'a>(&'a self, names: Vec<&'a str>) -> Option<(&Self, &str)> {
+        match names.iter().find(|name| self.contains(name)) {
+            Some(f) => Some((self, *f)),
+            None => None,
+        }
+    }
+}
+
+pub struct OjpDoc<'a>(pub Document<'a>);
+
+impl<'a> OjpDoc<'a> {
+    pub fn new(xml: &'a str) -> Result<Self, ErrorResponse> {
+        let ojp = OjpDoc(Document::parse(xml)?);
+        Ok(ojp)
+    }
+
+    pub fn get_locations(&self) -> Result<Vec<Location>, ErrorResponse> {
+        let locations = self
+            .0
+            .descendants()
+            .find(|n| n.has_tag_name("OJPLocationInformationDelivery"))
+            .ok_or("No location delivery node found".to_string())?
+            .children()
+            .filter(|n| n.has_tag_name("Location"))
+            .collect::<Vec<Node>>();
+        match locations.len() {
+            0 => Err("No Locations found".to_string())?,
+            _ => Ok(locations
+                .iter()
+                .map(|l| parse_lir(l))
+                .collect::<Result<Vec<Location>, ErrorResponse>>()?),
+        }
+    }
+
+    pub fn get_exchange_points(&self) -> Result<Vec<ExchangePoint>, ErrorResponse> {
+        let expts = self
+            .0
+            .descendants()
+            .find(|n| n.has_tag_name("OJPExchangePointsDelivery"))
+            .ok_or("No exchange point delivery node found".to_string())?
+            .children()
+            .filter(|n| n.has_tag_name("Place"))
+            .collect::<Vec<Node>>();
+        match expts.len() {
+            0 => Err("No Exchange Points found".to_string())?,
+            _ => Ok(expts
+                .iter()
+                .map(|e| parse_epr(e))
+                .collect::<Result<Vec<ExchangePoint>, ErrorResponse>>()?),
+        }
+    }
+
+    pub fn get_trips(&self) -> Result<Vec<Trip>, ErrorResponse> {
+        let trips = self
+            .0
+            .descendants()
+            .filter(|n| n.has_tag_name("TripResult"))
+            .collect::<Vec<Node>>();
+        match trips.len() {
+            0 => Err("No Trips found".to_string())?,
+            _ => Ok(trips
+                .iter()
+                .map(|t| parse_trip(t))
+                .collect::<Result<Vec<Trip>, ErrorResponse>>()?),
+        }
     }
 }
