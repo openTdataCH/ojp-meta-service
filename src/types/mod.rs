@@ -2,8 +2,8 @@ use std::{
     collections::HashMap,
     num::{ParseFloatError, ParseIntError},
     str::FromStr,
+    vec,
 };
-use std::{num::ParseFloatError, str::FromStr, vec};
 
 use chrono::{DateTime, NaiveDateTime};
 use dotenvy_macro::dotenv;
@@ -142,6 +142,7 @@ impl System {
             System::AT => vec![System::CH, System::IT, System::SLO],
             System::IT => vec![System::AT, System::CH, System::SLO],
             System::SLO => vec![System::AT, System::IT],
+            System::FERN => System::get_exp_systems().to_vec(),
         }
     }
     // returns an array of matching neighboring countries for two systems

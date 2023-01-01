@@ -1693,6 +1693,9 @@ fn test_trip_parse_ok() {
     let trips = trip_result.unwrap().get_trips();
     println!("{:?}", trips.unwrap()[0]);
     assert_eq!("hello", "hello");
+}
+
+#[test]
 fn test_adjacent() {
     assert_eq!(
         System::AT.adjacent(),

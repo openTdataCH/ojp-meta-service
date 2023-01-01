@@ -106,9 +106,6 @@ async fn rocket() -> _ {
     let client = Client::new();
 
     //gather all the configs for there different systems
-    let system_configs: Vec<SystemConfig> =
-        System::get_all().iter().map(|s| s.get_config()).collect();
-
     let system_configs: Vec<SystemConfig> = System::get_exp_systems()
         .iter()
         .map(|s| s.get_config())
