@@ -56,7 +56,7 @@ fn test_epr_parsing_ok() {
                 lat: 45.73516,
                 lng: 7.32432
             },
-            pt_mode: "bus".to_string(),
+            pt_mode: Some("bus".to_string()),
         }),
         parse_epr(
             &roxmltree::Document::parse(
