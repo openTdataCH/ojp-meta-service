@@ -20,6 +20,8 @@ use rocket::serde::json::Json;
 use rocket::State;
 use types::*;
 
+use crate::requests::get_trip;
+
 #[macro_use]
 extern crate rocket;
 
@@ -68,6 +70,66 @@ async fn location(
     let doc = OjpDoc::new(&res)?;
     let locations = doc.get_locations()?;
     Ok(Json(locations))
+}
+
+#[get("/exchange_test")]
+async fn exchange_test<'a>(
+    exchange_points: &'a State<ExchangePointState>,
+) -> Result<Json<(Vec<Trip>, Vec<Trip>)>, ErrorResponse> {
+    let (origin, destination) = (
+        System::from_str("ch")?.get_config(),
+        System::from_str("at")?.get_config(),
+    );
+
+    let exchange_point_id = "ch:1:sloid:3000".to_string();
+
+    let (origin_exp, destination_exp) = (
+        exchange_points
+            .0
+            .get(&origin.id)
+            .ok_or("No exchange points for this system".to_string())?
+            .into_iter()
+            .find(|n| n.private_code.eq(&exchange_point_id)),
+        exchange_points
+            .0
+            .get(&destination.id)
+            .ok_or("No exchange points for this system".to_string())?
+            .into_iter()
+            .find(|n| n.private_code.eq(&exchange_point_id)),
+    );
+
+    println!("{:?}", origin_exp);
+    println!("{:?}", destination_exp);
+
+    let first_trip = match origin_exp {
+        Some(exp) => {
+            get_trip(
+                "8507000",
+                "Bern",
+                &exp.place_ref,
+                &exp.location_name,
+                origin,
+            )
+            .await
+        }
+        None => Err(ErrorResponse::ReqwestError("No trip".to_string())),
+    }?;
+
+    let second_trip = match destination_exp {
+        Some(exp) => {
+            get_trip(
+                &exp.place_ref,
+                &exp.location_name,
+                "U3xBPTFATz1XaWVuIEhhdXB0YmFobmhvZkBYPTE2Mzc2NDEzQFk9NDgxODUxODRAVT04MUBMPTQ5MDEzNDkwMEBCPTFAcD0xNjY1MTMyOTEyQGk9QcOXYXQ6NDk6MTM0OUB8V2llbiBIYXVwdGJhaG5ob2Z8MTYuMzc2NDEzfDQ4LjE4NTE4NHx0cnVl",
+                "Wien Hauptbahnhof",
+                destination,
+            )
+            .await
+        }
+        None => Err(ErrorResponse::ReqwestError("No trip".to_string())),
+    }?;
+
+    Ok(Json((first_trip, second_trip)))
 }
 
 #[get("/trip")]
@@ -146,7 +208,12 @@ async fn rocket() -> _ {
 
     //build the app
     rocket::build()
-        .mount("/", routes![index, location, system, echo, exchange, trip])
+        .mount(
+            "/",
+            routes![index, location, system, echo, exchange, trip, exchange_test],
+        )
         .mount("/docs", FileServer::from(relative!("/docs")))
         .manage(exp_pts)
 }
+
+// U3xBPTFATz1aw7xyaWNoIEhCQFg9ODU0MTI1M0BZPTQ3Mzc3NjIwQFU9ODFATD0xNjE1MDAzMDdAaT1Bw5djaDoyMzAyNjo2ODg6MjoxQHxaw7xyaWNoIEhCfDguNTQxMjUzfDQ3LjM3NzYyfHRydWU-

@@ -279,7 +279,7 @@ pub struct TimedLeg {
     pub stop_point_name: String,
     pub planned_quay: Option<String>,
     pub departure_time: String,
-    pub order: u32,
+    // pub order: u32,
     pub kind: TimedLegType,
 }
 
@@ -307,6 +307,12 @@ pub struct ExchangePoint {
     pub location_name: String,
     pub coordinates: Coordinates,
     pub pt_mode: Option<String>,
+    pub private_code: String,
+}
+
+pub struct Point {
+    pub place_ref: String,
+    pub place_name: String,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -356,6 +362,38 @@ impl OjpNode<'_> {
         match names.iter().find(|name| self.contains(name)) {
             Some(f) => Some((self, *f)),
             None => None,
+        }
+    }
+
+    pub fn contains_either_val<'a>(
+        &'a self,
+        descendant: &'a str,
+        containee: &'a str,
+        values: [&'a str; 2],
+    ) -> Result<Node, ErrorResponse> {
+        let containers = self
+            .0
+            .descendants()
+            .filter(|n| n.has_tag_name(descendant))
+            .collect::<Vec<Node>>();
+        let correct = containers.iter().find(|c| {
+            c.descendants()
+                .find(|cc| {
+                    OjpNode(cc)
+                        .text_of(containee)
+                        .ok()
+                        .eq(&Some(values[0].to_string()))
+                        || OjpNode(cc)
+                            .text_of(containee)
+                            .ok()
+                            .eq(&Some(values[1].to_string()))
+                })
+                .is_some()
+        });
+        println!("{:?}", correct);
+        match correct {
+            Some(x) => Ok(*x),
+            None => Err(ErrorResponse::ParseError("Fuck this".to_string())),
         }
     }
 }
