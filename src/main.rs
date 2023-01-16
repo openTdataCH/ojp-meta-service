@@ -98,9 +98,6 @@ async fn exchange_test<'a>(
             .find(|n| n.private_code.eq(&exchange_point_id)),
     );
 
-    println!("{:?}", origin_exp);
-    println!("{:?}", destination_exp);
-
     let first_trip = match origin_exp {
         Some(exp) => {
             get_trip(
@@ -122,6 +119,64 @@ async fn exchange_test<'a>(
                 &exp.location_name,
                 "U3xBPTFATz1XaWVuIEhhdXB0YmFobmhvZkBYPTE2Mzc2NDEzQFk9NDgxODUxODRAVT04MUBMPTQ5MDEzNDkwMEBCPTFAcD0xNjY1MTMyOTEyQGk9QcOXYXQ6NDk6MTM0OUB8V2llbiBIYXVwdGJhaG5ob2Z8MTYuMzc2NDEzfDQ4LjE4NTE4NHx0cnVl",
                 "Wien Hauptbahnhof",
+                destination,
+            )
+            .await
+        }
+        None => Err(ErrorResponse::ReqwestError("No trip".to_string())),
+    }?;
+
+    Ok(Json((first_trip, second_trip)))
+}
+
+#[post("/exchange_test_post", format = "json", data = "<request>")]
+async fn exchange_test_post<'a>(
+    request: Json<TripForm>,
+    exchange_points: &'a State<ExchangePointState>,
+) -> Result<Json<(Vec<Trip>, Vec<Trip>)>, ErrorResponse> {
+    let data = request.into_inner();
+
+    let (origin, destination) = (
+        System::from_str(&data.origin.system)?.get_config(),
+        System::from_str(&data.destination.system)?.get_config(),
+    );
+
+    let (origin_exp, destination_exp) = (
+        exchange_points
+            .0
+            .get(&origin.id)
+            .ok_or("No exchange points for this system".to_string())?
+            .into_iter()
+            .find(|n| n.private_code.eq(&data.exchange)),
+        exchange_points
+            .0
+            .get(&destination.id)
+            .ok_or("No exchange points for this system".to_string())?
+            .into_iter()
+            .find(|n| n.private_code.eq(&data.exchange)),
+    );
+
+    let first_trip = match origin_exp {
+        Some(exp) => {
+            get_trip(
+                &data.origin.reference,
+                &data.origin.name,
+                &exp.place_ref,
+                &exp.location_name,
+                origin,
+            )
+            .await
+        }
+        None => Err(ErrorResponse::ReqwestError("No trip".to_string())),
+    }?;
+
+    let second_trip = match destination_exp {
+        Some(exp) => {
+            get_trip(
+                &exp.place_ref,
+                &exp.location_name,
+                &data.destination.reference,
+                &data.destination.name,
                 destination,
             )
             .await
@@ -210,10 +265,17 @@ async fn rocket() -> _ {
     rocket::build()
         .mount(
             "/",
-            routes![index, location, system, echo, exchange, trip, exchange_test],
+            routes![
+                index,
+                location,
+                system,
+                echo,
+                exchange,
+                trip,
+                exchange_test,
+                exchange_test_post
+            ],
         )
         .mount("/docs", FileServer::from(relative!("/docs")))
         .manage(exp_pts)
 }
-
-// U3xBPTFATz1aw7xyaWNoIEhCQFg9ODU0MTI1M0BZPTQ3Mzc3NjIwQFU9ODFATD0xNjE1MDAzMDdAaT1Bw5djaDoyMzAyNjo2ODg6MjoxQHxaw7xyaWNoIEhCfDguNTQxMjUzfDQ3LjM3NzYyfHRydWU-

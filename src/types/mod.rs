@@ -327,6 +327,20 @@ pub struct GeoRestriction {
     lower_right: Coordinates,
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct TripForm {
+    pub origin: TripLocation,
+    pub destination: TripLocation,
+    pub exchange: String,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct TripLocation {
+    pub name: String,
+    pub reference: String,
+    pub system: String,
+}
+
 // wrapper struct around roxmltree::Node so we can impl some methods
 #[derive(Debug)]
 pub struct OjpNode<'a>(pub &'a Node<'a, 'a>);
@@ -390,7 +404,6 @@ impl OjpNode<'_> {
                 })
                 .is_some()
         });
-        println!("{:?}", correct);
         match correct {
             Some(x) => Ok(*x),
             None => Err(ErrorResponse::ParseError("Fuck this".to_string())),
