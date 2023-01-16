@@ -26,11 +26,6 @@ pub fn parse_lir(location: &Node) -> Result<Location, ErrorResponse> {
 //The Result of an Exchange Point Request gets parsed into an ExchangePoint Object for further processing
 pub fn parse_epr(exchange_point: &Node) -> Result<ExchangePoint, ErrorResponse> {
     let ojp_node = OjpNode(exchange_point);
-    ojp_node.contains_either_val(
-        "PrivateCode",
-        "System",
-        ["LA-ExchangePoint-ID", "LinkingAlps"],
-    );
     Ok(ExchangePoint {
         place_ref: ojp_node
             .text_of("StopPlaceRef")
