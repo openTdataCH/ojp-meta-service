@@ -203,6 +203,7 @@ pub struct ExchangePointResponse {
 }
 
 // location information response
+// this is sent back from a location request and is the main representation of a location in our system
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Location {
     pub stop_place_ref: String,
@@ -211,6 +212,7 @@ pub struct Location {
     pub coordinates: Coordinates,
 }
 
+// trip that is parsed from ojp
 #[derive(Debug, Serialize)]
 pub struct Trip {
     pub id: String,
@@ -221,6 +223,7 @@ pub struct Trip {
     pub legs: Vec<TripLeg>,
 }
 
+// enum to handle different leg types
 #[derive(Debug, Serialize)]
 pub enum TripLeg {
     // this might need a more complex type that captures metadata, but it's ok for now
@@ -228,6 +231,8 @@ pub enum TripLeg {
     TransferLeg(TransferLeg),
 }
 
+// enum to handle different timed leg types
+// what is still missing here is to handle different departure/arrival time combos
 #[derive(Debug, Serialize)]
 pub enum TimedLegType {
     Board,
@@ -308,6 +313,7 @@ pub struct TripLocation {
 }
 
 // wrapper struct around roxmltree::Node so we can impl some methods
+// this is a common rust pattern since we can't directly impl methods for structs we don't own
 #[derive(Debug)]
 pub struct OjpNode<'a>(pub &'a Node<'a, 'a>);
 
@@ -345,6 +351,7 @@ impl OjpNode<'_> {
         }
     }
 
+    // this is very specific but necessary to filter for private codes in exchange points
     pub fn contains_either_val<'a>(
         &'a self,
         descendant: &'a str,
