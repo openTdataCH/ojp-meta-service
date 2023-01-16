@@ -25,12 +25,6 @@ use crate::requests::get_trip;
 #[macro_use]
 extern crate rocket;
 
-// example route showing how to receive and unpack json
-#[post("/echo", data = "<lir>")]
-fn echo(lir: Json<LocationInformationRequest>) -> Json<LocationInformationRequest> {
-    Json(lir.into_inner())
-}
-
 // get exchange points of a system
 #[get("/exchange?<system>")]
 fn exchange<'a>(
@@ -39,12 +33,6 @@ fn exchange<'a>(
 ) -> Result<Json<&'a Vec<ExchangePoint>>, ErrorResponse> {
     let sys = System::from_str(system)?;
     Ok(Json(exchange_points.0.get(&sys).unwrap()))
-}
-
-// example route showing how to back propagate error and request system
-#[get("/system/<id>")]
-fn system(id: &str) -> Result<Json<SystemConfig>, ErrorResponse> {
-    Ok(Json(System::from_str(id)?.get_config()))
 }
 
 // handler to query a location request
@@ -268,8 +256,6 @@ async fn rocket() -> _ {
             routes![
                 index,
                 location,
-                system,
-                echo,
                 exchange,
                 trip,
                 exchange_test,

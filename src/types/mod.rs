@@ -202,19 +202,6 @@ pub struct ExchangePointResponse {
     pub xml: String,
 }
 
-// location information request
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct LocationInformationRequest {
-    requestor_ref: Option<String>,
-    location_name: Option<String>,
-    // if someone wants to search "my location" this would be needed:
-    coordinates: Option<Coordinates>,
-    geo_restriction: Option<GeoRestriction>,
-    nr_of_results: usize,
-    // possibly, not sure yet
-    // system: SystemRef,
-}
-
 // location information response
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Location {
@@ -222,15 +209,6 @@ pub struct Location {
     pub stop_place_name: String,
     pub location_name: String,
     pub coordinates: Coordinates,
-}
-
-// trip request
-pub struct TripRequest {
-    origin: String,
-    destination: String,
-    // maybe we need to use chrono::DateTime for this, depends on what we need to do
-    dep_arr_time: String,
-    intermediate_stops: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -295,12 +273,6 @@ pub struct TransferLeg {
     pub walk_duration: Option<String>,
 }
 
-pub struct ExchangePointRequest {
-    system: System,
-    nr_of_results: usize,
-    continue_at: usize,
-}
-
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub struct ExchangePoint {
     pub place_ref: String,
@@ -319,12 +291,6 @@ pub struct Point {
 pub struct Coordinates {
     pub lat: f64,
     pub lng: f64,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct GeoRestriction {
-    upper_left: Coordinates,
-    lower_right: Coordinates,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
