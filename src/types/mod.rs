@@ -406,7 +406,7 @@ impl OjpNode<'_> {
         });
         match correct {
             Some(x) => Ok(*x),
-            None => Err(ErrorResponse::ParseError("Fuck this".to_string())),
+            None => Err(ErrorResponse::ParseError("No value found".to_string())),
         }
     }
 }
