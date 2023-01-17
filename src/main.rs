@@ -119,8 +119,8 @@ async fn exchange_test<'a>(
 }
 
 // trip request between two adjacent systems
-#[post("/exchange_test_post", format = "json", data = "<request>")]
-async fn exchange_test_post<'a>(
+#[post("/trip_exchange", format = "json", data = "<request>")]
+async fn trip_exchange<'a>(
     request: Json<TripForm>,
     exchange_points: &'a State<ExchangePointState>,
 ) -> Result<Json<(Vec<Trip>, Vec<Trip>)>, ErrorResponse> {
@@ -135,13 +135,13 @@ async fn exchange_test_post<'a>(
         exchange_points
             .0
             .get(&origin.id)
-            .ok_or("No exchange points for this system".to_string())?
+            .ok_or("No exchange point for this system".to_string())?
             .into_iter()
             .find(|n| n.private_code.eq(&data.exchange)),
         exchange_points
             .0
             .get(&destination.id)
-            .ok_or("No exchange points for this system".to_string())?
+            .ok_or("No exchange point for this system".to_string())?
             .into_iter()
             .find(|n| n.private_code.eq(&data.exchange)),
     );
@@ -264,7 +264,7 @@ async fn rocket() -> _ {
                 exchange,
                 trip,
                 exchange_test,
-                exchange_test_post
+                trip_exchange
             ],
         )
         .mount("/docs", FileServer::from(relative!("/docs")))
