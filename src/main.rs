@@ -25,12 +25,6 @@ use crate::requests::get_trip;
 #[macro_use]
 extern crate rocket;
 
-// example route showing how to receive and unpack json
-#[post("/echo", data = "<lir>")]
-fn echo(lir: Json<LocationInformationRequest>) -> Json<LocationInformationRequest> {
-    Json(lir.into_inner())
-}
-
 // get exchange points of a system
 #[get("/exchange?<system>")]
 fn exchange<'a>(
@@ -39,12 +33,6 @@ fn exchange<'a>(
 ) -> Result<Json<&'a Vec<ExchangePoint>>, ErrorResponse> {
     let sys = System::from_str(system)?;
     Ok(Json(exchange_points.0.get(&sys).unwrap()))
-}
-
-// example route showing how to back propagate error and request system
-#[get("/system/<id>")]
-fn system(id: &str) -> Result<Json<SystemConfig>, ErrorResponse> {
-    Ok(Json(System::from_str(id)?.get_config()))
 }
 
 // handler to query a location request
@@ -72,6 +60,7 @@ async fn location(
     Ok(Json(locations))
 }
 
+// hardcoded trip request between two systems
 #[get("/exchange_test")]
 async fn exchange_test<'a>(
     exchange_points: &'a State<ExchangePointState>,
@@ -129,6 +118,7 @@ async fn exchange_test<'a>(
     Ok(Json((first_trip, second_trip)))
 }
 
+// trip request between two adjacent systems
 #[post("/exchange_test_post", format = "json", data = "<request>")]
 async fn exchange_test_post<'a>(
     request: Json<TripForm>,
@@ -187,6 +177,7 @@ async fn exchange_test_post<'a>(
     Ok(Json((first_trip, second_trip)))
 }
 
+// example trip request endpoint
 #[get("/trip")]
 async fn trip() -> Result<Json<Vec<Trip>>, ErrorResponse> {
     let system = System::from_str("ch")?.get_config();
@@ -228,6 +219,7 @@ async fn rocket() -> _ {
         .map(|s| s.get_config())
         .collect();
 
+    // send all the exchange points request asynchronously
     let exchange_points = stream::iter(system_configs)
         .map(|system| {
             let client = &client;
@@ -249,6 +241,7 @@ async fn rocket() -> _ {
         .collect::<Vec<ExchangePointResponse>>()
         .await;
 
+    // parse answers into exchange point state
     let exp_pts = ExchangePointState(
         exchange_points
             .iter()
@@ -261,15 +254,13 @@ async fn rocket() -> _ {
             .collect(),
     );
 
-    //build the app
+    //mount the app
     rocket::build()
         .mount(
             "/",
             routes![
                 index,
                 location,
-                system,
-                echo,
                 exchange,
                 trip,
                 exchange_test,

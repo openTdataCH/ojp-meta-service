@@ -109,6 +109,7 @@ pub fn format_trip(
     )
 }
 
+// helper function to get a trip
 pub async fn get_trip(
     origin_ref: &str,
     origin_name: &str,
@@ -137,5 +138,3 @@ pub async fn get_trip(
     let trips = doc.get_trips()?;
     Ok(trips)
 }
-
-// pub async fn get_multi_trip(origins: Vec<Point>, destinations: Vec<Point>) -> (Trip, Trip) {}
