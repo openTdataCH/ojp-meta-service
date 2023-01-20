@@ -18,7 +18,7 @@ The OJP Requests are the basis of the program. The Requests are needed to get al
 
 All the OJP Requests are in XML Format. In this document, only the required requests for the program are being described. There are of course more requests but they are irrelevant for this project.
 
-The Endpoints on which the requests can be performed are described above.
+The Endpoints on which the requests can be performed are described in this document: [API Keys](https://gitlab.ti.bfh.ch/dufas2/project1-documentation/-/blob/main/technical/api_keys.md)
 
 ## Location Information Request (LIR)
 
@@ -251,6 +251,10 @@ The whole response is too big to put it in this documentation. A lot of parts fr
 
 The response usually consists of multiple TripResults. Only one is shown in the example above for simplicity.
 
+### Notes
+
+Parsing becomes difficult here, because we have to parse different `Leg`-types differently. But we have to know which `Leg`-type is included in a specific node beforehand. This is solved by the `contains` methods on the `OjpNode`-struct in our code.
+
 ## Multi Trip Request (MTR)
 
 Multi Trip Requests are made if the user wants to add a "via" to his/her trip. 
@@ -395,3 +399,8 @@ The response gives us a list of exchange points from the system. The response an
 					</ojp:Mode>
 				</ojp:Place>
 ```
+#### Notes
+
+It is rather difficult to identify the same Exchange Point in different systems. This should really be solved on OJP level. It doesn't help that some systems use StopPlaces while others use StopPoints. Exchange Points need to be consistent accross all systems. Correcting this in the meta system is error prone and fragile.
+
+The `SystemValue` of `PrivateCode`s is different accross systems. The swiss system uses `LA-ExchangePoint-ID` the austrian system uses simply `LinkingAlps`. This is really not great, things like this need to be fixed.
