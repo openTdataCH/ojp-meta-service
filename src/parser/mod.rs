@@ -36,6 +36,12 @@ pub fn parse_epr(exchange_point: &Node) -> Result<ExchangePoint, ErrorResponse> 
             lat: ojp_node.text_of("Latitude")?.parse::<f64>()?,
         },
         pt_mode: ojp_node.text_of("PtMode").ok(),
+        private_code: OjpNode(&ojp_node.contains_either_val(
+            "PrivateCode",
+            "System",
+            ["LA-ExchangePoint-ID", "LinkingAlps"],
+        )?)
+        .text_of("Value")?,
     })
 }
 
@@ -85,7 +91,7 @@ fn parse_timed_leg(node: &OjpNode) -> Result<TripLeg, ErrorResponse> {
                     stop_point_name: timed_leg.text_tag_of("StopPointName")?,
                     planned_quay: timed_leg.text_tag_of("PlannedQuay").ok(),
                     departure_time: timed_leg.text_of("TimetabledTime")?,
-                    order: timed_leg.text_of("Order")?.parse::<u32>()?,
+                    // order: timed_leg.text_of("Order")?.parse::<u32>()?,
                     kind: TimedLegType::from_str(c.tag_name().name())?,
                 })
             })

@@ -1691,7 +1691,6 @@ fn test_trip_parse_ok() {
     </siri:OJP>"#,
     );
     let trips = trip_result.unwrap().get_trips();
-    println!("{:?}", trips.unwrap()[0]);
     assert_eq!("hello", "hello");
 }
 

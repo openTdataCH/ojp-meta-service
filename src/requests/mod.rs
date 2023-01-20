@@ -1,5 +1,8 @@
 use chrono::{DateTime, SecondsFormat, Utc};
-use std::time::SystemTime;
+use reqwest::Client;
+use std::{str::FromStr, time::SystemTime};
+
+use crate::types::{ErrorResponse, OjpDoc, Point, System, SystemConfig, Trip};
 
 pub fn format_lir(
     query: &str,
@@ -104,4 +107,34 @@ pub fn format_trip(
           </OJPRequest>
         </OJP>"#
     )
+}
+
+// helper function to get a trip
+pub async fn get_trip(
+    origin_ref: &str,
+    origin_name: &str,
+    destination_ref: &str,
+    destination_name: &str,
+    system: SystemConfig,
+) -> Result<Vec<Trip>, ErrorResponse> {
+    let res = Client::new()
+        .post(system.url)
+        .bearer_auth(system.key)
+        .header("Content-Type", "text/xml")
+        .body(format_trip(
+            origin_ref,
+            origin_name,
+            destination_ref,
+            destination_name,
+            system.req_ref,
+        ))
+        .send()
+        .await
+        .or(Err("OJP-Service can't be reached...".to_string()))?
+        .text()
+        .await
+        .or(Err("OJP response not readable...".to_string()))?;
+    let doc = OjpDoc::new(&res)?;
+    let trips = doc.get_trips()?;
+    Ok(trips)
 }
