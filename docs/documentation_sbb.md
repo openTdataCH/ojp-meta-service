@@ -1,16 +1,13 @@
-# API Keys
+# End points
 
-In this project, we have to collect data from different (already existing) endpoints. Every endpoint requires a different API Key. The different API keys and their regarding endpoints are listed in this document.
+In this project, we have to collect data from different (already existing) endpoints. Every endpoint requires a different API Key. The different API keys and their regarding endpoints are listed in this document:
 
-| Endpoint     |          Path |Token|   Description|
-|--------------|--------------|--------------|--------------|
-|https://api.opentransportdata.swiss|/ojp2020|57c5dbbbf1fe4d0001000018e0f7158cb2b347e3a6745e3ef949e7bf|SBB Prod|
-|https://odpch-test.cloud.tyk.io|/ojp-test|57c5dadd5e6307000100005ead6b87d5ec4f48d3ad5f9414e92907d4|SBB Test|
-|https://dev.atob.si|/OpenAPI/LinkingAlps/OJP|Not needed|LUR (Slovenia)|
-|https://efa.sta.bz.it  |/ojp/ojp|Not needed|STA LIR (Italy/Südtirol)|
-|https://vao.demo.hafas.de|/linking-alps/ojp|Kein Token gebraucht, aber im <RequestorRef>-XML Field muss "LinkingAlps-Test-2022" stehen.|VAO LIR (Austria)|
-|https://la-fvk.prod.ojp.odpch.ch|/ojp/ojp|57c5dbbbf1fe4d0001000018310ba4201a8042eb9cfba42c0a9cf01b|SBB long distance system, should only be used between exchange points with OJPMultiPointTripRequest|
-|https://euspirit.demo.hafas.de|/rcc|Not needed|EU Spirit|
+* Switzerland Test/Prod
+* Slovenia
+* South Tirol
+* Austria
+* LinkingAlps long distance server
+* EU Spirit long distance server
 
 # Overview of OJP Requests 
 
